@@ -1,38 +1,39 @@
 // Every design constant of the universe lives here. A colour world (design/<name>) changes only this file.
 // Colours are sRGB hex; main.js converts them for WebGL and writes the CSS custom properties from them.
 
+// Ember: almost black, rust and bordeaux in the nebula, amber points, one cold pale-blue accent.
 export default {
-  name: 'ultraviolet',
+  name: 'ember',
 
   // page and panel
-  bg: '#07060c',          // ground, panel, index ink
-  fg: '#f2eee6',          // text, index paper
-  dim: .42,               // opacity of secondary text (fg at this alpha)
+  bg: '#0a0605',          // ground, panel, index ink
+  fg: '#f5e8d8',          // text, index paper
+  dim: .6,                // opacity of secondary text (fg at this alpha)
   line: .14,              // opacity of hairlines (fg at this alpha)
-  accent: '#c9a9ff',      // kind label, hover, thread start
-  accent2: '#5de0c8',     // thread end, playing dot
-  indexHover: '#6a3fd6',  // hover in the light index
-  indexDim: .55,          // opacity of the kinds in the light index (bg at this alpha)
+  accent: '#b7d4ef',      // kind label, hover, thread start
+  accent2: '#f0a65e',     // thread end, playing dot
+  indexHover: '#9a2e17',  // hover in the light index
+  indexDim: .66,          // opacity of the kinds in the light index (bg at this alpha)
 
   // background shader: base plus two wisps of colour, each with its strength
-  nebula: { base: '#07060c', a: '#c9a9ff', aAmount: .07, b: '#5de0c8', bAmount: .03 },
+  nebula: { base: '#0a0605', a: '#b5421f', aAmount: .11, b: '#7a1426', bAmount: .09 },
 
   // points
-  dust: '#f2eee6',        // stardust and the wordmark
-  dustTintA: '#c9a9ff',   // share of the dust that turns accent after the dissolve
+  dust: '#ffcf96',        // stardust and the wordmark
+  dustTintA: '#e0683a',   // share of the dust that turns accent after the dissolve
   dustTintAShare: .06,
-  dustTintB: '#5de0c8',
-  dustTintBShare: .04,
-  node: '#f2eee6',
-  nodeHot: '#c9a9ff',     // hovered or selected node, mixed in at 75 %
-  edgeFrom: '#c9a9ff',
-  edgeTo: '#5de0c8',
-  pointer: '#f2eee6',     // the dot that replaces the cursor
-  pointerGlow: '#c9a9ff',
+  dustTintB: '#b7d4ef',
+  dustTintBShare: .015,
+  node: '#ffdcb0',
+  nodeHot: '#b7d4ef',     // hovered or selected node, mixed in at 75 %
+  edgeFrom: '#e0683a',
+  edgeTo: '#f0a65e',
+  pointer: '#ffe6c8',     // the dot that replaces the cursor
+  pointerGlow: '#e0683a',
 
   // postprocessing
-  bloom: { strength: .5, radius: .18, threshold: .14, audio: .55 }, // audio: extra strength on the bass
-  grain: .035,
+  bloom: { strength: .55, radius: .22, threshold: .14, audio: .6 }, // audio: extra strength on the bass
+  grain: .04,
   aberration: { base: .006, beat: .012 },
 
   // motion
