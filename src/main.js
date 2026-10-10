@@ -207,7 +207,14 @@ scene.add(dust);
 let NODES = [], REL = {}, nodes = [], N = {}, edges = [], adj = {};
 let selected = null, hovered = null;
 let p = 0, pTarget = 0, live = false, auto = false, lastInput = performance.now();
-const cam = { target: new THREE.Vector3(), dist: 100, distT: 100, theta: 0, phi: 0, vTheta: 0, vPhi: 0, offX: 0, offY: 0 };
+const cam = { target: new THREE.Vector3(), dist: 100, distT: 100, theta: 0, phi: 0, vTheta: 0, vPhi: 0, offX: 0, offY: 0, q: new THREE.Quaternion() };
+// The orbit is a free rotation (quaternion), not longitude/latitude: dragging turns the space endlessly in every direction, no poles.
+const AX = new THREE.Vector3(1, 0, 0), AY = new THREE.Vector3(0, 1, 0), qStep = new THREE.Quaternion(), qTmp = new THREE.Quaternion();
+function orbit(yaw, pitch) { // in the camera's own frame: yaw around its up, pitch around its right
+  if (yaw) cam.q.multiply(qStep.setFromAxisAngle(AY, yaw));
+  if (pitch) cam.q.multiply(qStep.setFromAxisAngle(AX, -pitch));
+  cam.q.normalize();
+}
 let tween = null; // { from: Vector3, node|null, t, dur, distFrom, distTo }
 let lastInteract = 0;
 const pointer = { x: -1, y: -1, sx: -1, sy: -1, inside: false, type: 'mouse' };
@@ -375,6 +382,7 @@ function updateCamera(dt, now) {
     cam.dist = cam.distT = 100 + (restDist() - 100) * e;
     cam.theta = Math.sin(e * Math.PI) * .18; // a slight sideways lean on the way in
     cam.phi = Math.sin(e * Math.PI) * -.08;
+    cam.q.setFromAxisAngle(AY, cam.theta).multiply(qTmp.setFromAxisAngle(AX, -cam.phi));
   } else {
     if (tween) {
       tween.t = Math.min(1, tween.t + (tween.dur ? dt / tween.dur : 1));
@@ -387,13 +395,12 @@ function updateCamera(dt, now) {
       cam.target.lerp(selected.pos, 1 - Math.exp(-dt * 4));
     }
     if (!tween) cam.dist += (cam.distT - cam.dist) * (1 - Math.exp(-dt * 5));
-    cam.theta += cam.vTheta; cam.phi = clamp(cam.phi + cam.vPhi, -1.25, 1.25);
+    orbit(cam.vTheta, cam.vPhi);
     const damp = Math.exp(-dt * 4); cam.vTheta *= damp; cam.vPhi *= damp;
-    if (!RM && !dragging) cam.theta += dt * (selected ? T.camDriftFocus : T.camDrift) * clamp((now - lastInteract) / 3000, 0, 1);
+    if (!RM && !dragging) orbit(dt * (selected ? T.camDriftFocus : T.camDrift) * clamp((now - lastInteract) / 3000, 0, 1), 0);
   }
-  const cp = Math.cos(cam.phi);
-  camera.position.set(Math.sin(cam.theta) * cp, Math.sin(cam.phi), Math.cos(cam.theta) * cp).multiplyScalar(cam.dist).add(cam.target);
-  camera.lookAt(cam.target);
+  camera.position.set(0, 0, cam.dist).applyQuaternion(cam.q).add(cam.target);
+  camera.quaternion.copy(cam.q); // looks along its own -z, which points at the target
   // shift the view left while the panel covers the right side
   // (on phones the panel is a bottom sheet, so the view moves up instead)
   const wide = W >= 760;
