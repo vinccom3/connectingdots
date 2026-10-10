@@ -21,7 +21,11 @@
 
 <div class="ui fade" id="tl"><b>Connecting Dots</b><br><a class="mail" href="mailto:minoas@connectingdots.world">minoas@connectingdots.world</a></div>
 <div class="ui fade" id="tr"><button type="button" id="toIndex" aria-keyshortcuts="I">Index</button></div>
-<div class="ui fade" id="br">Sources: Discogs, Beatport, Deezer, label pages · Data as of 10 Oct 2026</div>
+<div class="ui fade" id="player" hidden>
+  <button type="button" id="play" aria-pressed="false" aria-keyshortcuts="M"><i aria-hidden="true"></i><span>Play</span></button>
+  <span class="track"><b id="trackTitle"></b> <span id="trackBy"></span></span>
+  <a id="stream" target="_blank" rel="noopener" hidden></a>
+</div>
 
 <aside id="panel" aria-live="polite" aria-label="Details" inert>
   <button type="button" id="close" class="ui">Close</button>

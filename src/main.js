@@ -14,6 +14,8 @@ const SMALL = Math.min(innerWidth, innerHeight) < 700;
 const DUST = SMALL || !FINE ? 5200 : 14000;
 const CENTER = new THREE.Vector3(0, 0, -160); // the universe sits behind the wordmark; the camera flies through
 const FOV = 50;
+// The track behind the universe: the release node it belongs to and the file. Without the file the player stays hidden.
+const TRACK = { node: 'birdhouse', src: (import.meta.env.DEV && new URLSearchParams(location.search).get('track')) || '/audio/birdhouse.mp3' };
 const AUTO_AFTER = 6000; // ms without input before the dissolve starts on its own
 const AUTO_DURATION = 7; // s for a full dissolve when nobody scrolls
 const FOCUS_DURATION = RM ? 0 : 1.2;
@@ -143,11 +145,11 @@ dustGeo.boundingSphere = new THREE.Sphere(CENTER.clone(), 4000);
 const dustMat = new THREE.ShaderMaterial({
   transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
   uniforms: {
-    uP: { value: 0 }, uTime: { value: 0 }, uPR: { value: PR }, uScale: { value: 1 }, uFocus: { value: 100 }, uBreath: { value: RM ? 0 : 1 },
+    uP: { value: 0 }, uTime: { value: 0 }, uPR: { value: PR }, uScale: { value: 1 }, uFocus: { value: 100 }, uBreath: { value: RM ? 0 : 1 }, uAudio: { value: new THREE.Vector3() },
     uFg: { value: col(COLOR.fg) }, uA: { value: col(COLOR.accent) }, uB: { value: col(COLOR.accent2) },
   },
   vertexShader: /* glsl */`
-    uniform float uP, uTime, uPR, uScale, uFocus, uBreath; uniform vec3 uFg, uA, uB;
+    uniform float uP, uTime, uPR, uScale, uFocus, uBreath; uniform vec3 uFg, uA, uB, uAudio; // audio: bass, mid, high
     attribute vec3 aEnd; attribute vec4 aRand;
     varying float vA; varying vec3 vC; varying float vSoft;
     void main(){
@@ -160,6 +162,7 @@ const dustMat = new THREE.ShaderMaterial({
       float sw = sin(e * 3.14159);                                             // a soft swirl mid-flight
       p += sw * vec3(sin(aRand.w * 40. + e * 4.), cos(aRand.y * 37. + e * 3.), sin(aRand.z * 29. + e * 2.)) * 22.;
       p += e * uBreath * vec3(sin(uTime * .05 + aRand.w * 30.), cos(uTime * .04 + aRand.y * 20.), sin(uTime * .045 + aRand.x * 25.)) * 3.;
+      p += e * uBreath * normalize(p - vec3(0., 0., -160.) + .001) * uAudio.x * (2. + aRand.y * 5.); // the bass breathes the whole space
       vec4 mv = modelViewMatrix * vec4(p, 1.);
       gl_Position = projectionMatrix * mv;
       float depth = max(-mv.z, .5);
@@ -169,6 +172,7 @@ const dustMat = new THREE.ShaderMaterial({
       float floorPx = 1.;
       vA = (px < floorPx ? px / floorPx : 1.) * mix(.95, .5, blur) * mix(.85, .22 + aRand.z * .38, e);
       vA *= smoothstep(4., 40., depth);                                       // no blobs as the camera passes through
+      vA *= 1. + e * (uAudio.x * .6 + uAudio.z * 2.2 * pow(.5 + .5 * sin(uTime * 9. + aRand.w * 60.), 6.)); // highs make the dust glitter
       gl_PointSize = max(px, floorPx) * uPR;
       vSoft = blur;
       vec3 tint = aRand.z < .06 ? uA : aRand.z < .1 ? uB : uFg;
@@ -428,7 +432,7 @@ function updateNodes(dt, t) {
     const collapsed = n.parentN ? 1 - clamp(n.parentN.fan, 0, 1) : 0;
     const baseSize = [2.6, 1.7, 1.15, .8][n.tier];
     const size = baseSize * (1 - collapsed * .45) * (1 + n.hot * .7);
-    nSize[n.i] = .3 + (size - .3) * ne;
+    nSize[n.i] = (.3 + (size - .3) * ne) * (1 + audio.bass * .3);
     let a = (n.tier === 3 ? .85 : n.tier === 2 ? .8 : 1) * (1 - collapsed * .55) * (1 - n.dim * .72);
     nAlpha[n.i] = (.6 + .4 * ne) * a;
     const c = colorFor(n);
@@ -468,7 +472,7 @@ function segDist(px, py, ax, ay, bx, by) {
 }
 function updateEdges(dt) {
   const show = live ? 1 : clamp((p - .82) / .18, 0, 1);
-  const base = FINE ? .022 : .05;
+  const base = (FINE ? .022 : .05) + audio.beat * .12;
   const k = 1 - Math.exp(-dt * 6);
   const usePointer = FINE && pointer.inside && live;
   edges.forEach((e, i) => {
@@ -549,6 +553,11 @@ function frame(now) {
   dustMat.uniforms.uTime.value = RM ? 0 : t;
   nebulaMat.uniforms.uTime.value = RM ? 0 : t;
   finish.uniforms.uTime.value = RM ? 0 : t;
+  updateAudio(dt);
+  const amt = RM ? .3 : 1;
+  dustMat.uniforms.uAudio.value.set(audio.bass * amt, audio.mid * amt, audio.high * amt);
+  bloom.strength = .5 + audio.bass * .55 * amt;
+  finish.uniforms.uCA.value = .006 + audio.beat * .012 * amt;
 
   // inertia on the pointer dot
   const pk = 1 - Math.exp(-dt * 14);
@@ -721,6 +730,66 @@ function showIndex(on, restoreFocus = true) {
 $('toIndex').addEventListener('click', () => showIndex(true));
 $('toGraph').addEventListener('click', () => showIndex(false));
 
+/* ---------- sound: an own file through Web Audio, so the universe can listen to it ---------- */
+// Streaming embeds (Spotify, SoundCloud) hide their signal from the page; only a file can drive the visuals.
+const audio = { el: null, ctx: null, an: null, gain: null, bins: null, bass: 0, mid: 0, high: 0, beat: 0, avg: 0, playing: false };
+function band(a, b) { let s = 0; for (let i = a; i < b; i++) s += audio.bins[i]; return s / ((b - a) * 255); }
+function updateAudio(dt) {
+  if (!audio.an) return;
+  const k = 1 - Math.exp(-dt * 12), slow = 1 - Math.exp(-dt * 1.5);
+  let b = 0, m = 0, h = 0;
+  if (audio.playing) { audio.an.getByteFrequencyData(audio.bins); b = band(1, 6); m = band(6, 40); h = band(40, 140); }
+  // contrast: what stands out above the running level, not the level itself
+  audio.avg += (b - audio.avg) * slow;
+  const onset = clamp((b - audio.avg) * 5, 0, 1);
+  audio.bass += (clamp((b - audio.avg) * 4 + .12, 0, 1) - audio.bass) * k; // relative, so a steady bassline still pulses
+  audio.mid += (m - audio.mid) * k;
+  audio.high += (clamp(h * 2, 0, 1) - audio.high) * k;
+  audio.beat = Math.max(onset, audio.beat * Math.exp(-dt * 5));
+}
+async function setupAudio() {
+  const player = $('player');
+  const ok = await fetch(TRACK.src, { method: 'HEAD' }).then(r => r.ok && !(r.headers.get('content-type') || '').includes('text/html')).catch(() => false);
+  if (!ok) return;
+  const n = N[TRACK.node];
+  if (n) {
+    const artists = edges.filter(e => e.a === n && e.r === 'by').map(e => e.b.d.label);
+    $('trackTitle').textContent = n.d.label;
+    $('trackBy').textContent = artists.join(', ');
+    const pref = ['Spotify', 'Apple Music', 'Beatport', 'SoundCloud'];
+    const link = [...(n.d.links || [])].sort((a, b) => (pref.indexOf(a[0]) + 99) % 99 - (pref.indexOf(b[0]) + 99) % 99)[0];
+    if (link) { const a = $('stream'); a.href = link[1]; a.textContent = `Stream on ${link[0]} ↗`; a.hidden = false; }
+  }
+  player.hidden = false;
+  $('play').addEventListener('click', togglePlay);
+  addEventListener('keydown', e => { if (e.key.toLowerCase() === 'm' && !e.metaKey && !e.ctrlKey && live) togglePlay(); });
+}
+function togglePlay() {
+  if (!audio.el) {
+    audio.el = new Audio(TRACK.src); audio.el.loop = true; audio.el.crossOrigin = 'anonymous'; audio.el.preload = 'auto';
+    audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = audio.ctx.createMediaElementSource(audio.el);
+    audio.an = audio.ctx.createAnalyser(); audio.an.fftSize = 512; audio.an.smoothingTimeConstant = .6;
+    audio.bins = new Uint8Array(audio.an.frequencyBinCount);
+    audio.gain = audio.ctx.createGain(); audio.gain.gain.value = 0;
+    src.connect(audio.an); audio.an.connect(audio.gain); audio.gain.connect(audio.ctx.destination);
+  }
+  const t = audio.ctx.currentTime, g = audio.gain.gain;
+  g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
+  if (!audio.playing) {
+    audio.ctx.resume(); audio.el.play();
+    g.linearRampToValueAtTime(1, t + 1.6);
+    audio.playing = true;
+  } else {
+    g.linearRampToValueAtTime(0, t + .8);
+    setTimeout(() => { if (!audio.playing) audio.el.pause(); }, 850);
+    audio.playing = false;
+  }
+  $('play').setAttribute('aria-pressed', String(audio.playing));
+  $('play').querySelector('span').textContent = audio.playing ? 'Pause' : 'Play';
+  body.classList.toggle('sound', audio.playing);
+}
+
 /* ---------- start ---------- */
 async function start() {
   if (!renderer) { body.classList.add('live'); idx.hidden = false; $('toGraph').hidden = true; return; }
@@ -734,9 +803,10 @@ async function start() {
   buildGraph(nodesData, edgeData);
   nodeMat.uniforms.uScale.value = pxPerUnit(); nodeMat.uniforms.uPR.value = PR;
   buildIndex();
+  setupAudio();
   if (RM) goLive();
   const id = decodeURIComponent(location.hash.slice(1));
   if (id && N[id]) { goLive(); select(N[id]); }
 }
 start();
-if (import.meta.env.DEV) window.__cd = { get nodes() { return nodes; }, cam, camera, get p() { return p; }, renderer, select: id => select(N[id]) };
+if (import.meta.env.DEV) window.__cd = { get nodes() { return nodes; }, cam, camera, get p() { return p; }, renderer, audio, select: id => select(N[id]) };
