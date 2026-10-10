@@ -17,7 +17,8 @@ Ein Flug durch ein Universum auf Ketamin: weich, tief, langsam, leicht verschobe
 
 ## Technik
 
-- Three.js (aktuelle stabile Version, gepinnt, per CDN oder Vite, deine Wahl). Partikel als `Points` mit eigenem Shader: weiche runde Punkte, Größe nach Tiefe, additive Blending.
+- **Entschieden: Vite + npm.** Three.js, Postprocessing und ggf. d3-force-3d als Abhängigkeiten in `package.json`, Versionen gepinnt. `npm run dev` lokal, `npm run build` erzeugt `dist/`, Vercel erkennt Vite automatisch (Build Command `npm run build`, Output `dist`). `data/*.json` bleiben als statische Dateien in `public/data/` und werden zur Laufzeit per fetch geladen, damit sie ohne Build-Kenntnis änderbar bleiben. Die bisherige `index.html` v1 wandert nach `legacy/v1.html`.
+- Partikel als `Points` mit eigenem Shader: weiche runde Punkte, Größe nach Tiefe, additive Blending.
 - Postprocessing: Bloom, leichte chromatische Aberration an den Rändern, Filmkorn, Tiefenunschärfe für ferne Punkte. Alles dezent.
 - Hintergrund: kein flaches Schwarz, sondern sehr dunkler, langsam fließender Nebel (fbm-Shader wie in v1 als Ausgangspunkt, aber in 3D eingebettet oder als Skybox).
 - Farbe: dunkles Violett-Schwarz, Punkte warmweiß, Akzente Lavendel (#c9a9ff) und Mint (#5de0c8) wie in v1. In einer Designrunde später austauschbar, also als Konstanten.
