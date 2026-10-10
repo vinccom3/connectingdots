@@ -37,3 +37,34 @@ Ein Flug durch ein Universum auf Ketamin: weich, tief, langsam, leicht verschobe
 
 - Auf Branch `design/universe` bauen und pushen, Vercel-Vorschau-URL an Vic.
 - Kurz notieren, was bewusst offen ist (Sound, Fotos, Impressum).
+
+## Designrunde (nach Abnahme von v2)
+
+Ziel: zwei bis drei Farbwelten als eigene Branches mit je einer Vorschau-URL, Vic und Mino wählen. Danach Merge der gewählten Welt nach `main`.
+
+### Schritt 1: Theme herauslösen
+
+Alle gestalterischen Konstanten aus `src/main.js` in eine Datei `src/theme.js` ziehen, die `main.js` importiert. Heute liegt `COLOR` inline (Zeile 10), Bloom-Stärke, Korn, Nebelpalette, Drift-Tempo und Partikelgröße sind über die Datei verstreut. In `theme.js` gehört:
+
+- `bg`, `fg`, `dim`, `accent`, `accent2`
+- Nebelpalette des Hintergrund-Shaders (die drei Farbvektoren in `pal()`)
+- Punktfarbe des Staubs und der Knoten, Farbe des Zeiger-Dots
+- Bloom (Stärke, Radius, Schwelle), Korn, chromatische Aberration
+- Drift-Tempo der Kamera, Atem-Frequenz der Wortmarke
+- Schriftpaar (Display, Mono)
+
+Verhalten darf sich dabei nicht ändern. Ein Branch für eine Farbwelt ändert danach nur `theme.js`.
+
+### Schritt 2: Drei Welten als Branches
+
+Von `design/universe` abzweigen, Namen `design/ultraviolet`, `design/ember`, `design/chrome`:
+
+- **Ultraviolet**: der jetzige Stand. Violett-Schwarz, Lavendel `#c9a9ff` und Mint `#5de0c8`, warmweiße Punkte. Nachtclub um vier Uhr.
+- **Ember**: fast schwarz, tiefes Rostrot und Bordeaux im Nebel, Punkte in Bernstein, ein Akzent in kaltem Blassblau. Wärmer, körperlicher, weniger Techno-Klischee.
+- **Chrome**: Graphit und Silber, Nebel fast farblos mit kaltem Stich, Punkte reinweiß, ein einziger Akzent in Signalgrün oder Orange. Kühl, teuer, Ben-And-Gefühl.
+
+Pro Welt: Kontrast der Labels gegen den Nebel prüfen (mindestens 4,5:1 für die Panel-Texte), Bloom so einstellen, dass die Wortmarke nicht ausbrennt, einen Screenshot der Ankunft und einen des Universums in `docs/themes/<name>.png` ablegen, damit der Vergleich auch ohne Klicken geht.
+
+### Schritt 3: Wahl
+
+Vic schickt Mino die drei Vorschau-URLs. Gewählte Welt wird nach `design/universe` gemerged, die anderen Branches bleiben als Archiv stehen.
