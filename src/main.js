@@ -5,9 +5,9 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { forceSimulation, forceLink, forceManyBody, forceRadial } from 'd3-force-3d';
+import T from './theme.js';
 
-/* ---------- constants. Palette and pacing live here so a design round can swap them. ---------- */
-const COLOR = { bg: '#07060c', fg: '#f2eee6', accent: '#c9a9ff', accent2: '#5de0c8' };
+/* ---------- constants. Look and pacing live in theme.js; what stays here is behaviour. ---------- */
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const FINE = matchMedia('(hover: hover) and (pointer: fine)').matches;
 const SMALL = Math.min(innerWidth, innerHeight) < 700;
@@ -32,9 +32,21 @@ const dataP = Promise.all([
   fetch('/data/edges.json').then(r => r.json()),
 ]);
 const fontP = Promise.race([
-  Promise.all([document.fonts.load('800 120px Unbounded'), document.fonts.load('10px "Space Mono"')]),
+  Promise.all([document.fonts.load(`800 120px "${T.fonts.display}"`), document.fonts.load(`10px "${T.fonts.mono}"`)]),
   new Promise(r => setTimeout(r, 1200)),
 ]).catch(() => {});
+
+/* ---------- theme → CSS custom properties ---------- */
+const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+{
+  const st = document.documentElement.style;
+  st.setProperty('--bg', T.bg); st.setProperty('--fg', T.fg);
+  st.setProperty('--dim', rgba(T.fg, T.dim)); st.setProperty('--line', rgba(T.fg, T.line));
+  st.setProperty('--accent', T.accent); st.setProperty('--accent-2', T.accent2); st.setProperty('--index-hover', T.indexHover); st.setProperty('--index-dim', rgba(T.bg, T.indexDim));
+  st.setProperty('--display', `'${T.fonts.display}',system-ui,sans-serif`); st.setProperty('--mono', `'${T.fonts.mono}',ui-monospace,Menlo,monospace`);
+  const fl = $('fonts'); if (fl && fl.href !== T.fonts.href) fl.href = T.fonts.href;
+  document.querySelector('meta[name=theme-color]')?.setAttribute('content', T.bg);
+}
 
 /* ---------- renderer ---------- */
 const canvas = $('gl');
@@ -55,12 +67,12 @@ const col = c => new THREE.Color(c); // sRGB hex → linear working colour
 /* ---------- nebula: slow 3D fbm on the view direction, a skybox that never ends ---------- */
 const nebulaMat = new THREE.ShaderMaterial({
   side: THREE.BackSide, depthWrite: false, depthTest: false,
-  uniforms: { uTime: { value: 0 }, uA: { value: col(COLOR.accent) }, uB: { value: col(COLOR.accent2) }, uBase: { value: col(COLOR.bg) } },
+  uniforms: { uTime: { value: 0 }, uA: { value: col(T.nebula.a) }, uB: { value: col(T.nebula.b) }, uBase: { value: col(T.nebula.base) }, uAAmt: { value: T.nebula.aAmount }, uBAmt: { value: T.nebula.bAmount } },
   vertexShader: /* glsl */`
     varying vec3 vDir;
     void main(){ vDir = position; vec4 p = projectionMatrix * modelViewMatrix * vec4(position, 1.); gl_Position = p.xyww; }`,
   fragmentShader: /* glsl */`
-    uniform float uTime; uniform vec3 uA, uB, uBase; varying vec3 vDir;
+    uniform float uTime, uAAmt, uBAmt; uniform vec3 uA, uB, uBase; varying vec3 vDir;
     float h(vec3 p){ p = fract(p * .3183099 + .1); p *= 17.; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
     float n(vec3 x){ vec3 i = floor(x), f = fract(x); f = f * f * (3. - 2. * f);
       return mix(mix(mix(h(i), h(i + vec3(1,0,0)), f.x), mix(h(i + vec3(0,1,0)), h(i + vec3(1,1,0)), f.x), f.y),
@@ -71,8 +83,8 @@ const nebulaMat = new THREE.ShaderMaterial({
       vec3 q = vec3(fbm(d * 2.1 + t), fbm(d * 2.1 - t + 3.1), fbm(d * 2.1 + vec3(5.2, 1.3, t)));
       float f = fbm(d * 2.4 + 1.7 * q);
       vec3 c = uBase;
-      c += uA * pow(f, 3.2) * .07;
-      c += uB * pow(1. - f, 7.) * .03;
+      c += uA * pow(f, 3.2) * uAAmt;
+      c += uB * pow(1. - f, 7.) * uBAmt;
       gl_FragColor = vec4(c, 1.);
     }`,
 });
@@ -145,19 +157,20 @@ dustGeo.boundingSphere = new THREE.Sphere(CENTER.clone(), 4000);
 const dustMat = new THREE.ShaderMaterial({
   transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
   uniforms: {
-    uP: { value: 0 }, uTime: { value: 0 }, uPR: { value: PR }, uScale: { value: 1 }, uFocus: { value: 100 }, uBreath: { value: RM ? 0 : 1 }, uAudio: { value: new THREE.Vector3() },
-    uFg: { value: col(COLOR.fg) }, uA: { value: col(COLOR.accent) }, uB: { value: col(COLOR.accent2) },
+    uP: { value: 0 }, uTime: { value: 0 }, uPR: { value: PR }, uScale: { value: 1 }, uFocus: { value: 100 }, uBreath: { value: RM ? 0 : 1 }, uAudio: { value: new THREE.Vector3() }, uBreathSpeed: { value: new THREE.Vector2(T.breath.depth, T.breath.scale) },
+    uTintShare: { value: new THREE.Vector2(T.dustTintAShare, T.dustTintAShare + T.dustTintBShare) },
+    uFg: { value: col(T.dust) }, uA: { value: col(T.dustTintA) }, uB: { value: col(T.dustTintB) },
   },
   vertexShader: /* glsl */`
-    uniform float uP, uTime, uPR, uScale, uFocus, uBreath; uniform vec3 uFg, uA, uB, uAudio; // audio: bass, mid, high
+    uniform float uP, uTime, uPR, uScale, uFocus, uBreath; uniform vec2 uBreathSpeed, uTintShare; uniform vec3 uFg, uA, uB, uAudio; // audio: bass, mid, high
     attribute vec3 aEnd; attribute vec4 aRand;
     varying float vA; varying vec3 vC; varying float vSoft;
     void main(){
       float k = clamp((uP - aRand.x * .38) / .62, 0., 1.);
       float e = k < .5 ? 4. * k * k * k : 1. - pow(-2. * k + 2., 3.) / 2.;
       vec3 s = position;
-      s.z += sin(uTime * .55 + aRand.w * 6.2832) * .45 * uBreath;           // the wordmark breathes
-      s.xy *= 1. + sin(uTime * .42) * .006 * uBreath;
+      s.z += sin(uTime * uBreathSpeed.x + aRand.w * 6.2832) * .45 * uBreath;           // the wordmark breathes
+      s.xy *= 1. + sin(uTime * uBreathSpeed.y) * .006 * uBreath;
       vec3 p = mix(s, aEnd, e);
       float sw = sin(e * 3.14159);                                             // a soft swirl mid-flight
       p += sw * vec3(sin(aRand.w * 40. + e * 4.), cos(aRand.y * 37. + e * 3.), sin(aRand.z * 29. + e * 2.)) * 22.;
@@ -175,7 +188,7 @@ const dustMat = new THREE.ShaderMaterial({
       vA *= 1. + e * (uAudio.x * .6 + uAudio.z * 2.2 * pow(.5 + .5 * sin(uTime * 9. + aRand.w * 60.), 6.)); // highs make the dust glitter
       gl_PointSize = max(px, floorPx) * uPR;
       vSoft = blur;
-      vec3 tint = aRand.z < .06 ? uA : aRand.z < .1 ? uB : uFg;
+      vec3 tint = aRand.z < uTintShare.x ? uA : aRand.z < uTintShare.y ? uB : uFg;
       vC = mix(uFg, tint, e);
     }`,
   fragmentShader: /* glsl */`
@@ -308,7 +321,7 @@ function buildGraph(nodesData, edgeData) {
 /* ---------- postprocessing: bloom, then grain, edge aberration and vignette after the sRGB conversion ---------- */
 let composer, bloom, finish;
 const FinishShader = {
-  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uRes: { value: new THREE.Vector2() }, uCA: { value: .006 }, uGrain: { value: .035 } },
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uRes: { value: new THREE.Vector2() }, uCA: { value: T.aberration.base }, uGrain: { value: T.grain } },
   vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
   fragmentShader: /* glsl */`
     uniform sampler2D tDiffuse; uniform float uTime, uCA, uGrain; uniform vec2 uRes; varying vec2 vUv;
@@ -325,7 +338,7 @@ const FinishShader = {
 function setupComposer() {
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  bloom = new UnrealBloomPass(new THREE.Vector2(W, H), .5, .18, .14);
+  bloom = new UnrealBloomPass(new THREE.Vector2(W, H), T.bloom.strength, T.bloom.radius, T.bloom.threshold);
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
   finish = new ShaderPass(FinishShader);
@@ -376,7 +389,7 @@ function updateCamera(dt, now) {
     if (!tween) cam.dist += (cam.distT - cam.dist) * (1 - Math.exp(-dt * 5));
     cam.theta += cam.vTheta; cam.phi = clamp(cam.phi + cam.vPhi, -1.25, 1.25);
     const damp = Math.exp(-dt * 4); cam.vTheta *= damp; cam.vPhi *= damp;
-    if (!RM && !dragging) cam.theta += dt * (selected ? .006 : .016) * clamp((now - lastInteract) / 3000, 0, 1);
+    if (!RM && !dragging) cam.theta += dt * (selected ? T.camDriftFocus : T.camDrift) * clamp((now - lastInteract) / 3000, 0, 1);
   }
   const cp = Math.cos(cam.phi);
   camera.position.set(Math.sin(cam.theta) * cp, Math.sin(cam.phi), Math.cos(cam.theta) * cp).multiplyScalar(cam.dist).add(cam.target);
@@ -441,8 +454,8 @@ function updateNodes(dt, t) {
   nodeGeo.attributes.position.needsUpdate = true; nodeGeo.attributes.aSize.needsUpdate = true;
   nodeGeo.attributes.aColor.needsUpdate = true; nodeGeo.attributes.aAlpha.needsUpdate = true;
 }
-const FG = col(COLOR.fg), ACC = col(COLOR.accent), ACC2 = col(COLOR.accent2), cTmp = new THREE.Color();
-function colorFor(n) { return cTmp.copy(FG).lerp(ACC, n.hot * .75); }
+const NODE = col(T.node), HOT = col(T.nodeHot), EFROM = col(T.edgeFrom), ETO = col(T.edgeTo), cTmp = new THREE.Color();
+function colorFor(n) { return cTmp.copy(NODE).lerp(HOT, n.hot * .75); }
 
 /* ---------- per-frame: project to screen for hover, threads and labels ---------- */
 function project() {
@@ -490,17 +503,16 @@ function updateEdges(dt) {
     if (hovered && (e.a === hovered || e.b === hovered)) a = Math.max(a, .5);
     const vis = Math.min(e.a.parentN ? .35 + .65 * clamp(e.a.parentN.fan, 0, 1) : 1, e.b.parentN ? .35 + .65 * clamp(e.b.parentN.fan, 0, 1) : 1);
     e.lit += (a * vis * show - e.lit) * k;
-    eCol.set([ACC.r, ACC.g, ACC.b, e.lit, ACC2.r, ACC2.g, ACC2.b, e.lit], i * 8);
+    eCol.set([EFROM.r, EFROM.g, EFROM.b, e.lit, ETO.r, ETO.g, ETO.b, e.lit], i * 8);
   });
   edgeGeo.attributes.position.needsUpdate = true; edgeGeo.attributes.aCol.needsUpdate = true;
 }
 
 /* ---------- HUD: the pointer dot, its thread, names ---------- */
-const LAB = 'rgba(242,238,230,';
 function label(n, alpha, big) {
   if (!n.scr.ok) return;
-  hctx.font = `${big ? 11 : 10}px "Space Mono", ui-monospace, monospace`;
-  hctx.fillStyle = LAB + alpha + ')';
+  hctx.font = `${big ? 11 : 10}px "${T.fonts.mono}", ui-monospace, monospace`;
+  hctx.fillStyle = rgba(T.fg, alpha);
   const r = Math.max(5, Math.min(22, ([2.6, 1.7, 1.15, .8][n.tier] * pxPerUnit() / n.scr.depth) * .3));
   hctx.fillText(n.d.label.toUpperCase(), n.scr.x + r + 8, n.scr.y);
 }
@@ -515,19 +527,19 @@ function drawHud() {
     const close = nodes.filter(n => hoverable(n) && n !== hovered).map(n => [n, Math.hypot(n.scr.x - pointer.sx, n.scr.y - pointer.sy)]).filter(([, d]) => d < 150).sort((a, b) => a[1] - b[1]).slice(0, 3);
     hctx.lineWidth = 1;
     for (const [n, d] of close) {
-      hctx.strokeStyle = `rgba(201,169,255,${.16 * (1 - d / 150)})`;
+      hctx.strokeStyle = rgba(T.edgeFrom, .16 * (1 - d / 150));
       hctx.beginPath(); hctx.moveTo(pointer.sx, pointer.sy); hctx.lineTo(n.scr.x, n.scr.y); hctx.stroke();
     }
     if (hovered && hovered.scr.ok) {
       const g = hctx.createLinearGradient(pointer.sx, pointer.sy, hovered.scr.x, hovered.scr.y);
-      g.addColorStop(0, 'rgba(201,169,255,.85)'); g.addColorStop(1, 'rgba(93,224,200,.85)');
+      g.addColorStop(0, rgba(T.edgeFrom, .85)); g.addColorStop(1, rgba(T.edgeTo, .85));
       hctx.strokeStyle = g;
       hctx.beginPath(); hctx.moveTo(pointer.sx, pointer.sy); hctx.lineTo(hovered.scr.x, hovered.scr.y); hctx.stroke();
     }
     const glow = hctx.createRadialGradient(pointer.sx, pointer.sy, 0, pointer.sx, pointer.sy, 16);
-    glow.addColorStop(0, 'rgba(242,238,230,.55)'); glow.addColorStop(.25, 'rgba(201,169,255,.18)'); glow.addColorStop(1, 'rgba(201,169,255,0)');
+    glow.addColorStop(0, rgba(T.pointer, .55)); glow.addColorStop(.25, rgba(T.pointerGlow, .18)); glow.addColorStop(1, rgba(T.pointerGlow, 0));
     hctx.fillStyle = glow; hctx.beginPath(); hctx.arc(pointer.sx, pointer.sy, 16, 0, 7); hctx.fill();
-    hctx.fillStyle = COLOR.fg; hctx.beginPath(); hctx.arc(pointer.sx, pointer.sy, 2.4, 0, 7); hctx.fill();
+    hctx.fillStyle = T.pointer; hctx.beginPath(); hctx.arc(pointer.sx, pointer.sy, 2.4, 0, 7); hctx.fill();
   }
   if (selected) {
     const seen = new Set([selected.id]);
@@ -556,8 +568,8 @@ function frame(now) {
   updateAudio(dt);
   const amt = RM ? .3 : 1;
   dustMat.uniforms.uAudio.value.set(audio.bass * amt, audio.mid * amt, audio.high * amt);
-  bloom.strength = .5 + audio.bass * .55 * amt;
-  finish.uniforms.uCA.value = .006 + audio.beat * .012 * amt;
+  bloom.strength = T.bloom.strength + audio.bass * T.bloom.audio * amt;
+  finish.uniforms.uCA.value = T.aberration.base + audio.beat * T.aberration.beat * amt;
 
   // inertia on the pointer dot
   const pk = 1 - Math.exp(-dt * 14);
