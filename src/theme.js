@@ -1,18 +1,19 @@
 // Every design constant of the universe lives here. A colour world (design/<name>) changes only this file.
 // Colours are sRGB hex; main.js converts them for WebGL and writes the CSS custom properties from them.
 
+// Ultraviolet: violet-black, lavender and mint, warm-white points. A club at four in the morning.
 export default {
   name: 'ultraviolet',
 
   // page and panel
   bg: '#07060c',          // ground, panel, index ink
   fg: '#f2eee6',          // text, index paper
-  dim: .42,               // opacity of secondary text (fg at this alpha)
+  dim: .6,                // opacity of secondary text (fg at this alpha)
   line: .14,              // opacity of hairlines (fg at this alpha)
   accent: '#c9a9ff',      // kind label, hover, thread start
   accent2: '#5de0c8',     // thread end, playing dot
   indexHover: '#6a3fd6',  // hover in the light index
-  indexDim: .55,          // opacity of the kinds in the light index (bg at this alpha)
+  indexDim: .66,          // opacity of the kinds in the light index (bg at this alpha)
 
   // background shader: base plus two wisps of colour, each with its strength
   nebula: { base: '#07060c', a: '#c9a9ff', aAmount: .07, b: '#5de0c8', bAmount: .03 },
