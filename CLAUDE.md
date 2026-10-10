@@ -6,8 +6,9 @@ Zielpublikum: Labels, Booking-Agenten, Brands. Konkret soll André Hommen (Agent
 
 ## Stand
 
-- `index.html` – Prototyp v1: 2D-Canvas-Netz in Ringen, WebGL-Nebel im Hintergrund, Seitenpanel, Index-Ansicht. Wird durch v2 ersetzt (siehe BRIEF.md).
-- `data/nodes.json`, `data/edges.json` – 66 Knoten, 129 Kanten. Alle belegt (Discogs, Beatport, Deezer, Labelseiten). **Daten sind die Wahrheit, nicht anfassen ohne Beleg.**
+- `index.html` + `src/` – v2 „Universum“ (Vite, Three.js, d3-force-3d), Branch `design/universe`. Offene Punkte in OFFEN.md.
+- `legacy/v1.html` – Prototyp v1 (2D-Netz in Ringen), erreichbar unter `/legacy/v1`.
+- `public/data/nodes.json`, `public/data/edges.json` – 66 Knoten, 129 Kanten. Alle belegt (Discogs, Beatport, Deezer, Labelseiten). **Daten sind die Wahrheit, nicht anfassen ohne Beleg.**
 - Hosting: Vercel, Team geo-beratung, später Transfer an Mino. Jeder Push auf `main` geht live, Branches bekommen Vorschau-URLs.
 
 ## Regeln für Daten

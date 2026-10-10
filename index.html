@@ -1,72 +1,30 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Connecting Dots. Artist Management aus Köln. Minoas Cirillo.">
+<meta name="description" content="Connecting Dots. Artist management from Cologne by Minoas Cirillo. Connecting artists through the world.">
 <meta property="og:title" content="Connecting Dots">
-<meta property="og:description" content="Artist Management aus Köln. Das Netz von Minoas Cirillo.">
+<meta property="og:description" content="Connecting artists through the world.">
+<meta name="theme-color" content="#07060c">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <title>Connecting Dots</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;500;800&family=Space+Mono:wght@400;700&display=swap">
-<style>
-/* Layout: one screen, no scroll. A WebGL field behind a 2D graph; HTML only for the node panel and the index. Single dark world by choice. */
-:root{
-  --bg:#07060c; --fg:#f2eee6; --dim:rgba(242,238,230,.42); --line:rgba(242,238,230,.14);
-  --accent:#c9a9ff; --accent-2:#5de0c8;
-  --display:'Unbounded',system-ui,sans-serif; --mono:'Space Mono',ui-monospace,Menlo,monospace;
-  color-scheme:dark;
-}
-html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--fg);font-family:var(--mono)}
-canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
-#gl{z-index:0}#graph{z-index:1;cursor:crosshair;touch-action:none}
-.ui{position:fixed;z-index:3;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
-#tl{top:calc(16px + env(safe-area-inset-top,0px));left:16px}
-#tr{top:calc(16px + env(safe-area-inset-top,0px));right:16px;display:flex;gap:18px}
-#br{bottom:calc(16px + env(safe-area-inset-bottom,0px));right:16px;text-align:right;opacity:.6}
-.ui button{all:unset;cursor:pointer;color:var(--fg);border-bottom:1px solid var(--line);padding-bottom:2px}
-.ui button:hover,.ui button:focus-visible{border-color:var(--accent);outline:none}
-.ui b{color:var(--fg);font-weight:400}
-.ui .mail{text-transform:none;letter-spacing:0}
-#panel{position:fixed;z-index:4;right:0;top:0;bottom:0;width:min(400px,100vw);background:linear-gradient(90deg,transparent,rgba(7,6,12,.82) 16%,rgba(7,6,12,.97));padding:calc(72px + env(safe-area-inset-top,0px)) 24px calc(32px + env(safe-area-inset-bottom,0px)) 44px;box-sizing:border-box;overflow-y:auto;transform:translateX(100%);transition:transform .7s cubic-bezier(.2,.8,.2,1)}
-#panel.open{transform:none}
-#panel .kind{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
-#panel h2{font-family:var(--display);font-weight:800;font-size:clamp(24px,3.6vw,34px);line-height:1;margin:10px 0 18px;text-wrap:balance;text-transform:uppercase;letter-spacing:-.01em}
-#panel p{font-size:13px;line-height:1.6;margin:0 0 22px;max-width:36ch}
-#panel .meta{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:26px}
-#panel .meta span:nth-child(odd){color:var(--dim)}
-#panel .meta .mail{text-transform:none;letter-spacing:0}
-#panel .edges{display:flex;flex-direction:column;border-top:1px solid var(--line)}
-#panel .edges button{all:unset;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line);font-size:12px}
-#panel .edges button em{font-style:normal;color:var(--dim);font-size:9px;letter-spacing:.1em;text-transform:uppercase;text-align:right;white-space:nowrap}
-#panel .edges button:hover,#panel .edges button:focus-visible{color:var(--accent);outline:none}
-#panel .links{margin-top:26px;display:flex;flex-wrap:wrap;gap:14px;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
-#panel .links a{color:var(--fg);text-decoration:none;border-bottom:1px solid var(--line)}
-#panel .links a:hover{border-color:var(--accent-2)}
-#close{position:absolute;top:calc(16px + env(safe-area-inset-top,0px));right:16px}
-#index{position:fixed;inset:0;z-index:5;background:var(--fg);color:var(--bg);overflow-y:auto;padding:calc(64px + env(safe-area-inset-top,0px)) 16px calc(48px + env(safe-area-inset-bottom,0px));box-sizing:border-box;font-family:var(--display)}
-#index .ui{color:rgba(7,6,12,.5)}#index .ui button{color:var(--bg);border-color:rgba(7,6,12,.2)}
-#index ol{list-style:none;margin:0 auto;padding:0;max-width:1100px}
-#index li{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:16px;border-top:1px solid rgba(7,6,12,.15);padding:14px 0}
-#index li:last-child{border-bottom:1px solid rgba(7,6,12,.15)}
-#index li button{all:unset;cursor:pointer;font-weight:800;font-size:clamp(20px,3.6vw,44px);line-height:1;text-transform:uppercase;letter-spacing:-.02em;min-width:0}
-#index li button:hover,#index li button:focus-visible{color:#6a3fd6;outline:none}
-#index li small{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:rgba(7,6,12,.55);text-align:right}
-@media (max-width:600px){#index li{grid-template-columns:1fr}#index li small{text-align:left}}
-@media (prefers-reduced-motion:reduce){#panel{transition:none}}
-</style>
-
+<link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
-<canvas id="gl"></canvas>
-<canvas id="graph" aria-label="Netz der Verbindungen"></canvas>
+<h1 class="sr">Connecting Dots — Minoas Cirillo, artist management, Cologne</h1>
+<canvas id="gl" aria-hidden="true"></canvas>
+<canvas id="hud" aria-hidden="true"></canvas>
 
-<div class="ui" id="tl"><b>Connecting Dots</b><br><span class="mail">minoas@connectingdots.world</span></div>
-<div class="ui" id="tr"><button id="toIndex">Index</button></div>
-<div class="ui" id="br">Prototyp · Belege: Discogs, Beatport, Deezer · Stand 10.10.2026</div>
+<div class="ui fade" id="tl"><b>Connecting Dots</b><br><a class="mail" href="mailto:minoas@connectingdots.world">minoas@connectingdots.world</a></div>
+<div class="ui fade" id="tr"><button type="button" id="toIndex" aria-keyshortcuts="I">Index</button></div>
+<div class="ui fade" id="br">Sources: Discogs, Beatport, Deezer, label pages · Data as of 10 Oct 2026</div>
 
-<aside id="panel" aria-live="polite">
-  <button id="close" class="ui" style="position:absolute">Schließen</button>
+<aside id="panel" aria-live="polite" aria-label="Details" inert>
+  <button type="button" id="close" class="ui">Close</button>
   <div class="kind" id="pKind"></div>
   <h2 id="pTitle"></h2>
   <div class="meta" id="pMeta"></div>
@@ -75,193 +33,12 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
   <div class="links" id="pLinks"></div>
 </aside>
 
-<div id="index" hidden>
-  <div class="ui" style="top:calc(16px + env(safe-area-inset-top,0px));left:16px"><b>Connecting Dots</b> · Index</div>
-  <div class="ui" style="top:calc(16px + env(safe-area-inset-top,0px));right:16px"><button id="toGraph">Zum Netz</button></div>
-  <ol id="indexList"></ol>
-</div>
+<section id="index" hidden aria-label="Index">
+  <div class="ui bar"><b>Connecting Dots</b> · Index</div>
+  <div class="ui bar right"><button type="button" id="toGraph">Back to the universe</button></div>
+  <ol id="indexList"><!--INDEX--></ol>
+</section>
 
-<script type="module">
-'use strict';
-/* ---------- data. Every node and edge is sourced (Discogs, Beatport, Deezer, label pages); edges carry the exact relation. ---------- */
-const [NODES,ED]=await Promise.all([fetch('data/nodes.json').then(r=>r.json()),fetch('data/edges.json').then(r=>r.json())]);
-const REL=ED.relations,EDGES=ED.edges;
-const byId=Object.fromEntries(NODES.map(n=>[n.id,n]));
-const adj={};NODES.forEach(n=>adj[n.id]=[]);
-EDGES.forEach(([a,b,r])=>{adj[a].push({to:b,v:REL[r][0]});adj[b].push({to:a,v:REL[r][1]});});
-
-/* ---------- WebGL field ---------- */
-const glc=document.getElementById('gl');const gl=glc.getContext('webgl',{antialias:false,alpha:false});
-const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
-let glOK=false,prog,uT,uR,uM,uA,uZ;
-if(gl){
- const vs=`attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`;
- const fs=`precision highp float;uniform float t;uniform vec2 r;uniform vec2 m;uniform float a;uniform float z;
- float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
- float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
- float fbm(vec2 p){float v=0.,s=.5;for(int i=0;i<5;i++){v+=s*n(p);p=p*2.03+vec2(1.7,9.2);s*=.5;}return v;}
- vec3 pal(float x){return vec3(.07,.05,.13)+vec3(.46,.26,.62)*pow(x,2.)+vec3(.14,.56,.46)*pow(1.-x,6.)*.5;}
- void main(){vec2 uv=(gl_FragCoord.xy-.5*r)/min(r.x,r.y);vec2 mm=(m-.5*r)/min(r.x,r.y);
-  uv/=z; float d=length(uv-mm);float tt=t*.04;
-  vec2 q=vec2(fbm(uv*1.4+tt),fbm(uv*1.4-tt*.7+3.));
-  vec2 w=uv+1.2*q+.35*vec2(sin(tt*2.),cos(tt*1.6));
-  float f=fbm(w*1.6+q*.8);
-  f+=.18*exp(-d*3.)*a;
-  vec3 c=pal(f);
-  c*=1.-.55*dot(uv*z,uv*z);
-  c+=.012*(h(gl_FragCoord.xy+t)-.5);
-  gl_FragColor=vec4(c,1.);}`;
- function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return o;}
- prog=gl.createProgram();gl.attachShader(prog,sh(gl.VERTEX_SHADER,vs));gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(prog);
- if(gl.getProgramParameter(prog,gl.LINK_STATUS)){glOK=true;gl.useProgram(prog);
-  const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
-  const loc=gl.getAttribLocation(prog,'p');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
-  uT=gl.getUniformLocation(prog,'t');uR=gl.getUniformLocation(prog,'r');uM=gl.getUniformLocation(prog,'m');uA=gl.getUniformLocation(prog,'a');uZ=gl.getUniformLocation(prog,'z');}
-}
-
-/* ---------- graph ---------- */
-const gc=document.getElementById('graph');const ctx=gc.getContext('2d');
-let W=0,H=0,DPR=1;
-const P={x:-9999,y:-9999,down:false,active:0};
-const cam={x:0,y:0,s:1,tx:0,ty:0,ts:1};
-let selected=null,phase=RM?'free':'form',phaseT=0,t0=performance.now(),spin=0;
-const nodes=NODES.map(n=>({...n,x:0,y:0,vx:0,vy:0,ring:n.hub?0:(n.ring??3),vis:n.hub||n.ring!==undefined,show:(n.hub||n.ring!==undefined)?1:0,ang:0,r:n.hub?9:n.ring===1?6:n.ring===2?4:2.8}));
-const N=Object.fromEntries(nodes.map(n=>[n.id,n]));
-nodes.forEach(n=>{if(n.parent)n.parentN=N[n.parent];});
-const edges=EDGES.map(([a,b,r])=>({a:N[a],b:N[b],r}));
-const r1=nodes.filter(n=>n.ring===1);r1.forEach((n,i)=>n.ang=-Math.PI/2+i*(Math.PI*2/r1.length));
-const r2=nodes.filter(n=>n.ring===2);
-r2.forEach(n=>{const ps=adj[n.id].map(e=>N[e.to]).filter(m=>m.ring===1);let sx=0,sy=0;ps.forEach(m=>{sx+=Math.cos(m.ang);sy+=Math.sin(m.ang);});
- n.ang=ps.length?Math.atan2(sy,sx)+(Math.random()-.5)*.6:Math.random()*Math.PI*2;});
-r2.sort((a,b)=>a.ang-b.ang);for(let k=0;k<3;k++)for(let i=0;i<r2.length;i++){const p=r2[(i+r2.length-1)%r2.length];let d=r2[i].ang-p.ang;if(i===0)d+=Math.PI*2;if(d<.33){r2[i].ang+=(.33-d)/2;p.ang-=(.33-d)/2;}}
-const dust=[];
-function resize(){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;
- for(const c of[glc,gc]){c.width=W*DPR;c.height=H*DPR;}
- ctx.setTransform(DPR,0,0,DPR,0,0);if(glOK)gl.viewport(0,0,glc.width,glc.height);
- if(phase==='form')layoutWordmark();}
-addEventListener('resize',resize);
-function ringTarget(n){const cx=W/2,cy=H/2,mob=W<700,a=n.ang+spin*(n.ring===2?1:-.6);
- if(n.ring===0)return[cx,cy];
- if(n.ring===1){const rx=mob?W*.30:Math.min(W*.17,H*.24),ry=mob?H*.16:Math.min(H*.22,W*.17);return[cx+Math.cos(a)*rx,cy+Math.sin(a)*ry];}
- const rx=mob?W*.42:W*.41,ry=mob?H*.40:H*.41;return[cx+Math.cos(a)*rx,cy+Math.sin(a)*ry];}
-function layoutWordmark(){
- const oc=document.createElement('canvas');const s=Math.min(W*.9,1100);const fs=W<600?Math.floor(s/7.2):Math.floor(s/9.5);
- oc.width=W;oc.height=H;const o=oc.getContext('2d');o.fillStyle='#fff';o.textAlign='center';o.textBaseline='middle';
- o.font=`800 ${fs}px Unbounded, system-ui, sans-serif`;
- if(W<600){o.fillText('CONNECTING',W/2,H/2-fs*.6);o.fillText('DOTS',W/2,H/2+fs*.6);}else o.fillText('CONNECTING DOTS',W/2,H/2);
- const d=o.getImageData(0,0,W,H).data;const pts=[];const step=W<600?5:6;
- for(let y=0;y<H;y+=step)for(let x=0;x<W;x+=step)if(d[(y*W+x)*4+3]>128)pts.push([x+(Math.random()-.5)*2,y+(Math.random()-.5)*2]);
- for(let i=pts.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[pts[i],pts[j]]=[pts[j],pts[i]];}
- dust.length=0;const need=Math.min(pts.length,W<600?900:1600);
- for(let i=0;i<need;i++){const [x,y]=pts[i];dust.push({x:Math.random()*W,y:Math.random()*H,tx:x,ty:y,vx:0,vy:0,life:1,r:.9+Math.random()*.9});}
- nodes.forEach((n,i)=>{const p=pts[(i*37)%pts.length]||[W/2,H/2];n.tx=p[0];n.ty=p[1];n.x=Math.random()*W;n.y=Math.random()*H;});
-}
-resize();
-if(RM){nodes.forEach(n=>{const [x,y]=ringTarget(n.vis?n:(n.parentN||n));n.x=x;n.y=y;});}
-function visibleSet(){const v=new Set(nodes.filter(n=>n.ring<3).map(n=>n.id));
- if(selected){let s=selected;while(s){v.add(s.id);s=s.parentN;}
-  nodes.forEach(n=>{if(n.parent===selected.id)v.add(n.id);});adj[selected.id].forEach(e=>v.add(e.to));}
- return v;}
-function step(dt){
- if(phase==='form'){phaseT+=dt;const k=Math.min(1,phaseT/2.2);const e=k<1?1-Math.pow(1-k,3):1;
-  for(const d of dust){d.x+=(d.tx-d.x)*(.04+e*.08);d.y+=(d.ty-d.y)*(.04+e*.08);}
-  for(const n of nodes){n.x+=(n.tx-n.x)*(.04+e*.08);n.y+=(n.ty-n.y)*(.04+e*.08);}
-  if(phaseT>4.6){phase='release';phaseT=0;for(const d of dust){d.vx=(Math.random()-.5)*60;d.vy=(Math.random()-.5)*60-20;}}
-  return;}
- if(phase==='release'){phaseT+=dt;for(const d of dust){d.x+=d.vx*dt;d.y+=d.vy*dt;d.vx*=.985;d.vy*=.985;d.life-=dt*.45;}
-  if(phaseT>2.4){phase='free';dust.length=0;}}
- if(!RM&&!selected)spin+=dt*.012;
- const vis=visibleSet();
- for(const n of nodes){const want=vis.has(n.id)?1:0;
-  if(want&&!n.vis&&n.parentN){n.x=n.parentN.x+(Math.random()-.5)*8;n.y=n.parentN.y+(Math.random()-.5)*8;n.vx=(Math.random()-.5)*40;n.vy=(Math.random()-.5)*40;}
-  n.vis=!!want;n.show+=(want-n.show)*(want?.07:.12);}
- const live=nodes.filter(n=>n.show>.01);
- const settle=phase==='release'?Math.min(1,phaseT/2.4):1;
- for(const n of live){
-  if(n.ring<3){const [tx,ty]=ringTarget(n);const g=(n.hub?2.5:1.1)*settle;n.vx+=(tx-n.x)*g*dt;n.vy+=(ty-n.y)*g*dt;}
-  else if(n.parentN){const dx=n.x-n.parentN.x,dy=n.y-n.parentN.y,d=Math.hypot(dx,dy)||1;const L=W<700?46:80;const f=(L-d)*2.2*dt;n.vx+=dx/d*f;n.vy+=dy/d*f;n.vx+=(n.parentN.x-n.x)*.3*dt;n.vy+=(n.parentN.y-n.y)*.3*dt;}
-  for(const m of live){if(m===n)continue;let dx=n.x-m.x,dy=n.y-m.y;let d2=dx*dx+dy*dy+60;if(d2>40000)continue;const f=(W<700?2600:5600)/d2*Math.min(n.show,m.show);n.vx+=dx/Math.sqrt(d2)*f*dt;n.vy+=dy/Math.sqrt(d2)*f*dt;}
-  const dx=n.x-P.x,dy=n.y-P.y,d=Math.hypot(dx,dy);
-  if(d<200&&d>1&&!selected){const f=P.down?-70:20;n.vx+=dx/d*f*dt*(1-d/200)*4;n.vy+=dy/d*f*dt*(1-d/200)*4;}
-  n.vx+=Math.sin(t0*.0003+n.x*.01)*2.5*dt;n.vy+=Math.cos(t0*.00025+n.y*.01)*2.5*dt;
- }
- for(const n of live){n.vx*=.85;n.vy*=.85;n.x+=n.vx*dt*60*.016;n.y+=n.vy*dt*60*.016;const pad=28;n.x=Math.max(pad,Math.min(W-pad,n.x));n.y=Math.max(pad+36,Math.min(H-pad-40,n.y));}
- if(selected){cam.ts=W<700?1.6:1.9;cam.tx=selected.x;cam.ty=selected.y;}else{cam.ts=1;cam.tx=W/2;cam.ty=H/2;}
- cam.s+=(cam.ts-cam.s)*.045;cam.x+=(cam.tx-cam.x)*.045;cam.y+=(cam.ty-cam.y)*.045;
-}
-function toScreen(x,y){const ox=W<700?0:(selected?-W*.15:0);return[(x-cam.x)*cam.s+W/2+ox,(y-cam.y)*cam.s+H/2];}
-function draw(){
- ctx.clearRect(0,0,W,H);
- if(phase!=='free'){ctx.fillStyle='rgba(242,238,230,.9)';for(const d of dust){if(d.life<=0)continue;ctx.globalAlpha=Math.max(0,Math.min(1,d.life));ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,7);ctx.fill();}ctx.globalAlpha=1;}
- if(phase==='form')return;
- const near=new Set();if(selected){near.add(selected.id);adj[selected.id].forEach(e=>near.add(e.to));}
- for(const e of edges){
-  const vis=Math.min(e.a.show,e.b.show);if(vis<.02)continue;
-  const [ax,ay]=toScreen(e.a.x,e.a.y),[bx,by]=toScreen(e.b.x,e.b.y);
-  const mx=(e.a.x+e.b.x)/2,my=(e.a.y+e.b.y)/2;const dp=Math.hypot(mx-P.x,my-P.y);
-  let a=.07;if(dp<240&&!selected)a=Math.max(a,.07+.4*(1-dp/240));
-  const sel=selected&&(e.a===selected||e.b===selected);
-  if(selected)a=sel?.8:.04;
-  a*=vis;
-  const g=ctx.createLinearGradient(ax,ay,bx,by);g.addColorStop(0,`rgba(201,169,255,${a})`);g.addColorStop(1,`rgba(93,224,200,${a})`);
-  ctx.strokeStyle=g;ctx.lineWidth=sel?1.2:.8;ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();
-  if(sel){const v=e.a===selected?REL[e.r][0]:REL[e.r][1];ctx.fillStyle=`rgba(242,238,230,${.6*vis})`;ctx.font='9px Space Mono, monospace';ctx.textAlign='center';ctx.fillText(v.toUpperCase(),(ax+bx)/2,(ay+by)/2-6);}
- }
- ctx.textBaseline='middle';
- for(const n of nodes){
-  if(n.show<.02)continue;
-  const [x,y]=toScreen(n.x,n.y);const d=Math.hypot(n.x-P.x,n.y-P.y);
-  const hot=d<50||n===selected||(selected&&near.has(n.id));
-  const r=n.r*(n===selected?1.7:hot?1.3:1);
-  ctx.globalAlpha=(selected&&!near.has(n.id)&&n!==selected?.28:1)*n.show;
-  ctx.shadowBlur=hot?18:0;ctx.shadowColor='rgba(201,169,255,.8)';
-  ctx.beginPath();ctx.arc(x,y,r,0,7);
-  if(n.archive){ctx.strokeStyle='rgba(242,238,230,.7)';ctx.lineWidth=1;ctx.setLineDash([2,3]);ctx.stroke();ctx.setLineDash([]);}
-  else{ctx.fillStyle=n.hub?'#f2eee6':hot?'#c9a9ff':n.ring===2?'rgba(242,238,230,.55)':'rgba(242,238,230,.9)';ctx.fill();}
-  ctx.shadowBlur=0;
-  if(hot||n.ring<=1||(selected&&near.has(n.id))){
-   ctx.fillStyle=hot?'#f2eee6':'rgba(242,238,230,.75)';ctx.textAlign='left';ctx.font=(n.ring<=1?'11px':'10px')+' Space Mono, monospace';
-   ctx.fillText(n.label.toUpperCase(),x+r+8,y);}
-  ctx.globalAlpha=1;
- }
-}
-let last=performance.now();
-function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;t0=now;
- P.active+=((P.x>-100?1:0)-P.active)*.05;
- if(glOK){gl.uniform1f(uT,now/1000);gl.uniform2f(uR,glc.width,glc.height);gl.uniform2f(uM,P.x*DPR,glc.height-P.y*DPR);gl.uniform1f(uA,P.active);gl.uniform1f(uZ,1+(cam.s-1)*.35);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);}
- step(dt);draw();requestAnimationFrame(frame);}
-requestAnimationFrame(frame);
-
-/* ---------- interaction ---------- */
-function worldFromScreen(sx,sy){const ox=W<700?0:(selected?-W*.15:0);return[(sx-W/2-ox)/cam.s+cam.x,(sy-H/2)/cam.s+cam.y];}
-function pointerPos(e){const [x,y]=worldFromScreen(e.clientX,e.clientY);P.x=x;P.y=y;}
-gc.addEventListener('pointermove',pointerPos);
-gc.addEventListener('pointerdown',e=>{pointerPos(e);P.down=true;gc.setPointerCapture(e.pointerId);});
-gc.addEventListener('pointerup',e=>{P.down=false;pointerPos(e);
- if(phase!=='free'){phase='free';dust.length=0;return;}
- let best=null,bd=26/cam.s;for(const n of nodes){if(n.show<.5)continue;const d=Math.hypot(n.x-P.x,n.y-P.y);if(d<bd){bd=d;best=n;}}
- if(best)select(best);else if(selected)select(null);});
-gc.addEventListener('pointerleave',()=>{P.x=-9999;P.y=-9999;P.down=false;});
-const panel=document.getElementById('panel');
-function select(n){selected=n;if(!n){panel.classList.remove('open');return;}
- document.getElementById('pKind').textContent=n.kind;document.getElementById('pTitle').textContent=n.label;
- document.getElementById('pMeta').innerHTML=Object.entries(n.meta||{}).map(([k,v])=>`<span>${k}</span><span class="${k==='Kontakt'?'mail':''}">${v}</span>`).join('');
- document.getElementById('pNote').textContent=n.note;
- const ed=document.getElementById('pEdges');ed.innerHTML='';
- const list=[...adj[n.id]].sort((a,b)=>a.v.localeCompare(b.v,'de')||byId[a.to].label.localeCompare(byId[b.to].label,'de'));
- for(const e of list){const b=document.createElement('button');b.innerHTML=`<span>${byId[e.to].label}</span><em>${e.v}</em>`;b.onclick=()=>select(N[e.to]);ed.appendChild(b);}
- document.getElementById('pLinks').innerHTML=(n.links||[]).map(([t,u])=>`<a href="${u}" target="_blank" rel="noopener">${t} ↗</a>`).join('');
- panel.classList.add('open');}
-document.getElementById('close').onclick=()=>select(null);
-addEventListener('keydown',e=>{if(e.key==='Escape'){select(null);showIndex(false);}if(e.key.toLowerCase()==='i')showIndex(document.getElementById('index').hidden);});
-const idx=document.getElementById('index');const list=document.getElementById('indexList');
-[...NODES].sort((a,b)=>a.label.localeCompare(b.label,'de')).forEach(n=>{const li=document.createElement('li');
- const b=document.createElement('button');b.textContent=n.label;b.onclick=()=>{showIndex(false);select(N[n.id]);};
- const s=document.createElement('small');s.textContent=n.kind;li.append(b,s);list.appendChild(li);});
-function showIndex(on){idx.hidden=!on;}
-document.getElementById('toIndex').onclick=()=>showIndex(true);
-document.getElementById('toGraph').onclick=()=>showIndex(false);
-</script>
-
+<script type="module" src="/src/main.js"></script>
 </body>
 </html>
