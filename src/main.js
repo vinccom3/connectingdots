@@ -15,9 +15,13 @@ const DUST = SMALL || !FINE ? 5200 : 14000;
 const CENTER = new THREE.Vector3(0, 0, -160); // the universe sits behind the wordmark; the camera flies through
 const FOV = 50;
 // The track behind the universe: the release node it belongs to and the file. Without the file the player stays hidden.
-const TRACK = { node: 'birdhouse', bpm: 123, bars: 16, src: (import.meta.env.DEV && new URLSearchParams(location.search).get('track')) || '/audio/birdhouse.mp3' };
-const AUTO_AFTER = 6000; // ms without input before the dissolve starts on its own
-const AUTO_DURATION = 7; // s for a full dissolve when nobody scrolls
+// The file holds two cuts of the track back to back: the intro (16 bars, with vocals) and a vocal-free loop (25 bars).
+// The arrival runs on the intro: the wordmark holds for `hold` bars, dissolves over the rest, and the universe is there
+// when the loop takes over. Without the file the arrival runs on a timer and the player stays hidden.
+const TRACK = { node: 'birdhouse', bpm: 123, intro: 16, loop: 25, hold: 8, src: (import.meta.env.DEV && new URLSearchParams(location.search).get('track')) || '/audio/birdhouse.mp3' };
+const BAR = 240 / TRACK.bpm; // s
+const AUTO_AFTER = 6000; // ms without input before the dissolve starts on its own (timer mode only)
+const AUTO_DURATION = 7; // s for a full dissolve when nobody scrolls (timer mode only)
 const FOCUS_DURATION = RM ? 0 : 1.2;
 const E = t => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2); // easeInOutCubic
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -563,10 +567,22 @@ function frame(now) {
   const t = now / 1000;
   // intro progress: scroll drives it directly, otherwise it starts on its own
   if (!live) {
-    if (!auto && now - lastInput > AUTO_AFTER) auto = true;
-    if (auto) pTarget = Math.min(1, pTarget + dt / AUTO_DURATION);
-    p += (pTarget - p) * (1 - Math.exp(-dt * 2.4));
-    if (pTarget >= 1 && p > .993) goLive();
+    if (audio.mode === 'wait') {
+      // the wordmark holds until the first gesture starts the sound
+    } else if (audio.mode === 'drive' && !audio.skip) {
+      // the sound carries the arrival: hold, then dissolve, and the universe is there when the loop begins
+      const el = audio.ctx.currentTime - audio.t0, hold = TRACK.hold * BAR, len = TRACK.intro * BAR;
+      p = pTarget = E(clamp((el - hold) / (len - hold - .3), 0, 1));
+      if (el >= len - .05) goLive();
+    } else {
+      if (audio.skip) pTarget = 1;
+      else {
+        if (!auto && now - lastInput > AUTO_AFTER) auto = true;
+        if (auto) pTarget = Math.min(1, pTarget + dt / AUTO_DURATION);
+      }
+      p += (pTarget - p) * (1 - Math.exp(-dt * 2.4));
+      if (pTarget >= 1 && p > .993) goLive();
+    }
   }
   dustMat.uniforms.uP.value = p;
   dustMat.uniforms.uTime.value = RM ? 0 : t;
@@ -611,8 +627,11 @@ let dragging = false, down = null;
 const pointers = new Map();
 let pinch0 = 0, pinchDist0 = 0;
 
-function nudge(delta) { // intro only: scroll moves the dissolve, both ways
+let skipAcc = 0;
+function nudge(delta) { // intro only. Timer mode: scroll moves the dissolve, both ways. Sound mode: a decided scroll skips ahead.
   lastInput = performance.now(); auto = false;
+  if (audio.mode === 'wait') { arrive(); return; }
+  if (audio.mode === 'drive') { skipAcc = Math.max(0, skipAcc + delta); if (skipAcc > .6) skipIntro(); return; }
   pTarget = clamp(pTarget + delta, 0, 1);
 }
 addEventListener('wheel', e => {
@@ -665,8 +684,8 @@ function endPointer(e) {
   const wasDrag = dragging; dragging = false;
   if (!down) return;
   down = null;
+  if (!live) { if (audio.mode === 'wait') arrive(); else if (audio.mode !== 'drive') { lastInput = 0; auto = true; } return; } // a tap or click during the arrival lets it go
   if (wasDrag) return;
-  if (!live) { lastInput = 0; auto = true; return; } // a click during the arrival lets it go
   const hit = e.pointerType === 'mouse' ? pick(e.clientX, e.clientY, 40) : pick(e.clientX, e.clientY, 34);
   if (hit) select(hit); else if (selected) select(null);
 }
@@ -680,7 +699,7 @@ addEventListener('keydown', e => {
   const idxOpen = !$('index').hidden;
   if (e.key === 'Escape') { if (idxOpen) showIndex(false); else if (selected) select(null); return; }
   if (e.key.toLowerCase() === 'i' && !e.target.closest('input,textarea')) { showIndex(!idxOpen); return; }
-  if (!live && !idxOpen && ['ArrowDown', 'PageDown', ' ', 'Enter'].includes(e.key) && e.target === document.body) { e.preventDefault(); nudge(.25); auto = true; }
+  if (!live && !idxOpen && ['ArrowDown', 'PageDown', ' ', 'Enter'].includes(e.key) && e.target === document.body) { e.preventDefault(); nudge(.25); if (audio.mode === 'free') auto = true; }
   if (!live && !idxOpen && ['ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); nudge(-.25); }
 });
 
@@ -751,7 +770,12 @@ $('toGraph').addEventListener('click', () => showIndex(false));
 
 /* ---------- sound: an own file through Web Audio, so the universe can listen to it ---------- */
 // Streaming embeds (Spotify, SoundCloud) hide their signal from the page; only a file can drive the visuals.
-const audio = { buf: null, src: null, ctx: null, an: null, gain: null, bins: null, bass: 0, mid: 0, high: 0, beat: 0, avg: 0, playing: false, loading: false, loop: [0, 0], startedAt: 0, offset: 0 };
+const audio = {
+  mode: 'free', // free: arrival on a timer, sound opt-in | wait: file ready, wordmark holds for the first gesture | drive: sound carries the arrival
+  ctx: null, an: null, gain: null, buf: null, bins: null, intro: null, introGain: null, loop: null, ready: null,
+  t0: 0, o: 0, skip: false, starting: false, playing: false,
+  bass: 0, mid: 0, high: 0, beat: 0, avg: 0,
+};
 function band(a, b) { let s = 0; for (let i = a; i < b; i++) s += audio.bins[i]; return s / ((b - a) * 255); }
 function updateAudio(dt) {
   if (!audio.an) return;
@@ -782,47 +806,85 @@ async function setupAudio() {
   player.hidden = false;
   $('play').addEventListener('click', togglePlay);
   addEventListener('keydown', e => { if (e.key.toLowerCase() === 'm' && !e.metaKey && !e.ctrlKey && live) togglePlay(); });
+  audio.ready = loadAudio();
+  if (!live && !RM) { audio.mode = 'wait'; body.classList.add('wait'); }
 }
-// The file is the intro of the track (16 bars at 123 BPM) plus a short safety tail. An <audio loop> would leave a gap
-// at the seam (MP3 padding), so the buffer is looped sample-exactly: from the first transient, 16 bars long.
+// Decoding needs no gesture, only starting does. The buffer is looped sample-exactly (an <audio loop> would leave a
+// gap at the seam), so the file's lead-in is measured from its first transient: the track opens on a hit.
 async function loadAudio() {
-  if (audio.buf || audio.loading) return;
-  audio.loading = true;
   audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
   audio.an = audio.ctx.createAnalyser(); audio.an.fftSize = 512; audio.an.smoothingTimeConstant = .6;
   audio.bins = new Uint8Array(audio.an.frequencyBinCount);
   audio.gain = audio.ctx.createGain(); audio.gain.gain.value = 0;
   audio.an.connect(audio.gain); audio.gain.connect(audio.ctx.destination);
-  const data = await fetch(TRACK.src).then(r => r.arrayBuffer());
-  audio.buf = await audio.ctx.decodeAudioData(data);
+  try {
+    const data = await fetch(TRACK.src).then(r => r.arrayBuffer());
+    audio.buf = await audio.ctx.decodeAudioData(data);
+  } catch { audio.buf = null; if (audio.mode === 'wait') { audio.mode = 'free'; body.classList.remove('wait'); lastInput = performance.now(); } return; }
   const ch = audio.buf.getChannelData(0);
-  let i = 0; while (i < ch.length && Math.abs(ch[i]) < .1) i++; // the track opens on a hit: that is bar one
-  const start = i / audio.buf.sampleRate;
-  audio.loop = [start, Math.min(start + TRACK.bars * 4 * 60 / TRACK.bpm, audio.buf.duration)];
-  audio.loading = false;
+  let i = 0; while (i < ch.length && Math.abs(ch[i]) < .1) i++;
+  audio.o = i / audio.buf.sampleRate;
 }
-function startSource(offset) {
+function sections() {
+  const a = audio.o, b = a + TRACK.intro * BAR, c = Math.min(b + TRACK.loop * BAR, audio.buf.duration);
+  return { intro: [a, b], loop: [b, c] };
+}
+function startLoop(at, offset) {
+  const { loop } = sections();
   const s = audio.ctx.createBufferSource();
-  s.buffer = audio.buf; s.loop = true; s.loopStart = audio.loop[0]; s.loopEnd = audio.loop[1];
-  s.connect(audio.an);
-  s.start(0, audio.loop[0] + offset);
-  audio.src = s; audio.startedAt = audio.ctx.currentTime; audio.offset = offset;
+  s.buffer = audio.buf; s.loop = true; s.loopStart = loop[0]; s.loopEnd = loop[1];
+  s.connect(audio.an); s.start(at, offset ?? loop[0]);
+  audio.loop = s;
+}
+// first gesture during the arrival: the intro starts, the loop is scheduled to take over at its last sample
+async function arrive() {
+  if (audio.mode !== 'wait' || audio.starting) return;
+  audio.starting = true;
+  try {
+    await audio.ready;
+    if (!audio.buf) return;
+    try { await audio.ctx.resume(); } catch {}
+    if (audio.ctx.state !== 'running' || audio.mode !== 'wait') return; // a wheel alone unlocks no sound: keep holding, the hint stays
+    startArrival();
+  } finally { audio.starting = false; }
+}
+function startArrival() {
+  const { intro } = sections();
+  const t0 = audio.ctx.currentTime + .08;
+  audio.introGain = audio.ctx.createGain(); audio.introGain.connect(audio.an);
+  const s = audio.ctx.createBufferSource(); s.buffer = audio.buf; s.connect(audio.introGain);
+  s.start(t0, intro[0], intro[1] - intro[0]);
+  audio.intro = s;
+  startLoop(t0 + (intro[1] - intro[0]));
+  audio.t0 = t0; audio.mode = 'drive'; audio.playing = true;
+  audio.gain.gain.cancelScheduledValues(t0); audio.gain.gain.setValueAtTime(0, t0); audio.gain.gain.linearRampToValueAtTime(1, t0 + .6);
+  body.classList.remove('wait'); body.classList.add('sound');
+  $('play').setAttribute('aria-pressed', 'true'); $('play').querySelector('span').textContent = 'Pause';
+}
+// a decided scroll during the arrival: the intro fades, the loop begins at its own start, the dissolve finishes on its own
+function skipIntro() {
+  if (audio.mode !== 'drive' || audio.skip) return;
+  audio.skip = true;
+  const t = audio.ctx.currentTime, g = audio.introGain.gain;
+  g.setValueAtTime(1, t); g.linearRampToValueAtTime(0, t + 1.2);
+  try { audio.intro.stop(t + 1.25); } catch {}
+  try { audio.loop.stop(); } catch {}
+  startLoop(t + 1.2);
 }
 async function togglePlay() {
-  if (!audio.buf) { await loadAudio(); if (!audio.buf) return; }
-  const t = audio.ctx.currentTime, g = audio.gain.gain, len = audio.loop[1] - audio.loop[0];
+  if (audio.mode === 'wait') { arrive(); return; }
+  if (!audio.ctx || !audio.buf) return;
+  const t = audio.ctx.currentTime, g = audio.gain.gain;
   g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
   if (!audio.playing) {
-    audio.ctx.resume();
-    startSource(audio.offset % len);
-    g.linearRampToValueAtTime(1, t + 1.6);
+    await audio.ctx.resume();
+    if (!audio.loop) startLoop(audio.ctx.currentTime); // sound was opt-in (reduced motion, deep link): straight into the loop
+    g.linearRampToValueAtTime(1, audio.ctx.currentTime + 1.6);
     audio.playing = true;
   } else {
     g.linearRampToValueAtTime(0, t + .8);
-    const s = audio.src;
-    audio.offset = (audio.offset + t - audio.startedAt) % len;
-    setTimeout(() => { if (!audio.playing && s) { try { s.stop(); } catch {} } }, 850);
     audio.playing = false;
+    setTimeout(() => { if (!audio.playing) audio.ctx.suspend(); }, 850); // suspending freezes the clock, so a paused arrival also holds
   }
   $('play').setAttribute('aria-pressed', String(audio.playing));
   $('play').querySelector('span').textContent = audio.playing ? 'Pause' : 'Play';
