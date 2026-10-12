@@ -221,7 +221,7 @@ function orbit(yaw, pitch) { // in the camera's own frame: yaw around its up, pi
 }
 let tween = null; // { from: Vector3, node|null, t, dur, distFrom, distTo }
 let lastInteract = 0;
-const pointer = { x: -1, y: -1, sx: -1, sy: -1, inside: false, type: 'mouse' };
+const pointer = { x: -1, y: -1, sx: -1, sy: -1, inside: false, ui: false, type: 'mouse' };
 
 /* ---------- graph objects ---------- */
 let nodeGeo, nodeMat, nodePoints, edgeGeo, edgeMat, edgeLines;
@@ -550,7 +550,8 @@ function drawHud() {
     const glow = hctx.createRadialGradient(pointer.sx, pointer.sy, 0, pointer.sx, pointer.sy, 16);
     glow.addColorStop(0, rgba(T.pointer, .55)); glow.addColorStop(.25, rgba(T.pointerGlow, .18)); glow.addColorStop(1, rgba(T.pointerGlow, 0));
     hctx.fillStyle = glow; hctx.beginPath(); hctx.arc(pointer.sx, pointer.sy, 16, 0, 7); hctx.fill();
-    hctx.fillStyle = T.pointer; hctx.beginPath(); hctx.arc(pointer.sx, pointer.sy, 2.4, 0, 7); hctx.fill();
+    pointer.r = (pointer.r ?? 2.4) + ((pointer.ui ? 4 : 2.4) - (pointer.r ?? 2.4)) * .25;
+    hctx.fillStyle = T.pointer; hctx.beginPath(); hctx.arc(pointer.sx, pointer.sy, pointer.r, 0, 7); hctx.fill();
   }
   if (selected) {
     const seen = new Set([selected.id]);
@@ -603,7 +604,7 @@ function frame(now) {
     updateNodes(dt, t);
     camera.updateMatrixWorld();
     project();
-    hovered = live && FINE && pointer.inside && !dragging ? pick(pointer.sx, pointer.sy, 40) : null;
+    hovered = live && FINE && pointer.inside && !pointer.ui && !dragging ? pick(pointer.sx, pointer.sy, 40) : null;
     updateEdges(dt);
   }
   composer.render(dt);
@@ -691,8 +692,18 @@ function endPointer(e) {
 }
 canvas.addEventListener('pointerup', endPointer);
 canvas.addEventListener('pointercancel', e => { pointers.delete(e.pointerId); down = null; dragging = false; });
-canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') pointer.inside = false; });
-canvas.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') { pointer.inside = true; pointer.x = pointer.sx = e.clientX; pointer.y = pointer.sy = e.clientY; } });
+// The dot is the cursor over the whole universe, the small UI included; only the panel and the index, reading
+// surfaces, hand back the system cursor. So the pointer is followed on the window, not on the canvas.
+addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse') return;
+  const reading = !!e.target.closest?.('#panel, #index');
+  pointer.x = e.clientX; pointer.y = e.clientY;
+  if (reading) { pointer.inside = false; return; }
+  if (!pointer.inside) { pointer.inside = true; pointer.sx = e.clientX; pointer.sy = e.clientY; }
+  pointer.ui = !!e.target.closest?.('.ui button, .ui a');
+});
+document.documentElement.addEventListener('mouseleave', () => (pointer.inside = false));
+canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hovered = null; });
 
 addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
