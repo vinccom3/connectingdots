@@ -15,7 +15,7 @@ const DUST = SMALL || !FINE ? 5200 : 14000;
 const CENTER = new THREE.Vector3(0, 0, -160); // the universe sits behind the wordmark; the camera flies through
 const FOV = 50;
 // The track behind the universe: the release node it belongs to and the file. Without the file the player stays hidden.
-const TRACK = { node: 'birdhouse', src: (import.meta.env.DEV && new URLSearchParams(location.search).get('track')) || '/audio/birdhouse.mp3' };
+const TRACK = { node: 'birdhouse', bpm: 123, bars: 16, src: (import.meta.env.DEV && new URLSearchParams(location.search).get('track')) || '/audio/birdhouse.mp3' };
 const AUTO_AFTER = 6000; // ms without input before the dissolve starts on its own
 const AUTO_DURATION = 7; // s for a full dissolve when nobody scrolls
 const FOCUS_DURATION = RM ? 0 : 1.2;
@@ -751,7 +751,7 @@ $('toGraph').addEventListener('click', () => showIndex(false));
 
 /* ---------- sound: an own file through Web Audio, so the universe can listen to it ---------- */
 // Streaming embeds (Spotify, SoundCloud) hide their signal from the page; only a file can drive the visuals.
-const audio = { el: null, ctx: null, an: null, gain: null, bins: null, bass: 0, mid: 0, high: 0, beat: 0, avg: 0, playing: false };
+const audio = { buf: null, src: null, ctx: null, an: null, gain: null, bins: null, bass: 0, mid: 0, high: 0, beat: 0, avg: 0, playing: false, loading: false, loop: [0, 0], startedAt: 0, offset: 0 };
 function band(a, b) { let s = 0; for (let i = a; i < b; i++) s += audio.bins[i]; return s / ((b - a) * 255); }
 function updateAudio(dt) {
   if (!audio.an) return;
@@ -783,25 +783,45 @@ async function setupAudio() {
   $('play').addEventListener('click', togglePlay);
   addEventListener('keydown', e => { if (e.key.toLowerCase() === 'm' && !e.metaKey && !e.ctrlKey && live) togglePlay(); });
 }
-function togglePlay() {
-  if (!audio.el) {
-    audio.el = new Audio(TRACK.src); audio.el.loop = true; audio.el.crossOrigin = 'anonymous'; audio.el.preload = 'auto';
-    audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const src = audio.ctx.createMediaElementSource(audio.el);
-    audio.an = audio.ctx.createAnalyser(); audio.an.fftSize = 512; audio.an.smoothingTimeConstant = .6;
-    audio.bins = new Uint8Array(audio.an.frequencyBinCount);
-    audio.gain = audio.ctx.createGain(); audio.gain.gain.value = 0;
-    src.connect(audio.an); audio.an.connect(audio.gain); audio.gain.connect(audio.ctx.destination);
-  }
-  const t = audio.ctx.currentTime, g = audio.gain.gain;
+// The file is the intro of the track (16 bars at 123 BPM) plus a short safety tail. An <audio loop> would leave a gap
+// at the seam (MP3 padding), so the buffer is looped sample-exactly: from the first transient, 16 bars long.
+async function loadAudio() {
+  if (audio.buf || audio.loading) return;
+  audio.loading = true;
+  audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  audio.an = audio.ctx.createAnalyser(); audio.an.fftSize = 512; audio.an.smoothingTimeConstant = .6;
+  audio.bins = new Uint8Array(audio.an.frequencyBinCount);
+  audio.gain = audio.ctx.createGain(); audio.gain.gain.value = 0;
+  audio.an.connect(audio.gain); audio.gain.connect(audio.ctx.destination);
+  const data = await fetch(TRACK.src).then(r => r.arrayBuffer());
+  audio.buf = await audio.ctx.decodeAudioData(data);
+  const ch = audio.buf.getChannelData(0);
+  let i = 0; while (i < ch.length && Math.abs(ch[i]) < .1) i++; // the track opens on a hit: that is bar one
+  const start = i / audio.buf.sampleRate;
+  audio.loop = [start, Math.min(start + TRACK.bars * 4 * 60 / TRACK.bpm, audio.buf.duration)];
+  audio.loading = false;
+}
+function startSource(offset) {
+  const s = audio.ctx.createBufferSource();
+  s.buffer = audio.buf; s.loop = true; s.loopStart = audio.loop[0]; s.loopEnd = audio.loop[1];
+  s.connect(audio.an);
+  s.start(0, audio.loop[0] + offset);
+  audio.src = s; audio.startedAt = audio.ctx.currentTime; audio.offset = offset;
+}
+async function togglePlay() {
+  if (!audio.buf) { await loadAudio(); if (!audio.buf) return; }
+  const t = audio.ctx.currentTime, g = audio.gain.gain, len = audio.loop[1] - audio.loop[0];
   g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
   if (!audio.playing) {
-    audio.ctx.resume(); audio.el.play();
+    audio.ctx.resume();
+    startSource(audio.offset % len);
     g.linearRampToValueAtTime(1, t + 1.6);
     audio.playing = true;
   } else {
     g.linearRampToValueAtTime(0, t + .8);
-    setTimeout(() => { if (!audio.playing) audio.el.pause(); }, 850);
+    const s = audio.src;
+    audio.offset = (audio.offset + t - audio.startedAt) % len;
+    setTimeout(() => { if (!audio.playing && s) { try { s.stop(); } catch {} } }, 850);
     audio.playing = false;
   }
   $('play').setAttribute('aria-pressed', String(audio.playing));

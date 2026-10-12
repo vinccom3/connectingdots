@@ -1,6 +1,6 @@
 # v2 Universum: bewusst offen
 
-- **Sound.** Player und Audio-Kopplung sind gebaut (Bass lässt den Raum atmen und das Leuchten pulsieren, Höhen lassen den Staub funkeln, Schläge lassen die Fäden aufleuchten; Taste M). Es fehlt die Datei: `public/audio/birdhouse.mp3` (Ausschnitt 60–90 s, ca. 192 kbps). Ohne Datei bleibt der Player unsichtbar. Freigabe von HMWL für den Ausschnitt klären. Feinabstimmung der Reaktion erst mit dem echten Track.
+- **Sound.** Datei liegt: `public/audio/birdhouse.mp3`, das Intro des Tracks (16 Takte bei 123 BPM, 0:00–0:31,22) plus kurzer Sicherheitsrest, 192 kbps. Läuft als taktgenauer Loop über einen Web-Audio-Buffer (kein `<audio loop>`, das hätte eine Lücke am Nahtpunkt). Das WAV-Master bleibt lokal und ist per `.gitignore` ausgeschlossen. Offen: Freigabe von HMWL für den Ausschnitt, Feinabstimmung der Reaktion (Bass/Höhen) am echten Track.
 - **Stream-Links.** Birdhouse hat Spotify (Player verlinkt dorthin). Spotify/Apple-Links für die übrigen Releases ergänzen, sobald belegt.
 - **Quellenzeile unten rechts.** Auf Vics Wunsch entfernt (abweichend vom Brief); Quellen stehen je Knoten im Panel.
 - **Mailadresse oben links.** Auf Vics Wunsch entfernt (abweichend vom Brief); sie steht als Kontakt im Panel von Minoas Cirillo.
