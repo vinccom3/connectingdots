@@ -9,7 +9,7 @@
 }
 html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--fg);font-family:var(--mono);-webkit-font-smoothing:antialiased;overscroll-behavior:none}
 canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
-#gl{z-index:0;touch-action:none}
+#gl{z-index:0;touch-action:none;background:var(--bg)}
 #hud{z-index:4;pointer-events:none}
 @media (hover:hover) and (pointer:fine){body.dot,body.dot #gl,body.dot .ui,body.dot .ui *{cursor:none}}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -69,8 +69,10 @@ body.sound #player:hover a,body.sound #player:focus-within a{max-width:260px;opa
 #close:focus-visible{border-color:var(--accent)}
 
 #index{position:fixed;inset:0;z-index:6;background:var(--fg);color:var(--bg);overflow-y:auto;padding:calc(72px + env(safe-area-inset-top,0px)) 16px calc(48px + env(safe-area-inset-bottom,0px));box-sizing:border-box;font-family:var(--display)}
-#index .ui{color:color-mix(in srgb,var(--bg) 50%,transparent);position:fixed;top:calc(16px + env(safe-area-inset-top,0px));left:16px}
-#index .ui.right{left:auto;right:16px}
+/* one bar for title and Back: same line, same baseline, never wraps into each other */
+#index .ui.bar{color:color-mix(in srgb,var(--bg) 50%,transparent);position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:baseline;gap:16px;
+  padding:calc(16px + env(safe-area-inset-top,0px)) 16px 12px;background:var(--fg);white-space:nowrap}
+#index .ui.bar button{padding:0 0 2px}
 #index .ui b{color:var(--bg)}
 #index .ui button{color:var(--bg);border-color:color-mix(in srgb,var(--bg) 25%,transparent)}
 #index .ui button:focus-visible,#index .ui button:hover{border-color:var(--index-hover)}
