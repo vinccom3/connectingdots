@@ -7,13 +7,17 @@
 <meta property="og:title" content="Connecting Dots">
 <meta property="og:description" content="Connecting artists through the world.">
 <meta name="theme-color" content="#07060c">
+<meta name="color-scheme" content="dark">
+<style>html,body{background:#07060c}</style>
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <title>Connecting Dots</title>
 <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
 <h1 class="sr">Connecting Dots — Minoas Cirillo, artist management, Cologne</h1>
+<div id="edge" aria-hidden="true"></div>
 <canvas id="gl" aria-hidden="true"></canvas>
+<div id="vignette" aria-hidden="true"></div>
 <canvas id="hud" aria-hidden="true"></canvas>
 
 <div class="ui fade" id="tl"><b>Connecting Dots</b></div>
@@ -24,7 +28,7 @@
   <a id="stream" target="_blank" rel="noopener" hidden></a>
 </div>
 
-<nav class="ui" id="legal" aria-label="Legal"><a href="/impressum">Impressum</a> · <a href="/datenschutz">Datenschutz</a></nav>
+<nav class="ui fade" id="legal" aria-label="Legal"><a href="/impressum">Impressum</a></nav>
 
 <aside id="panel" aria-live="polite" aria-label="Details" inert>
   <button type="button" id="close" class="ui">Close</button>
@@ -40,7 +44,7 @@
 <section id="index" hidden aria-label="Index">
   <div class="ui bar"><span><b>Connecting Dots</b> · Index</span><button type="button" id="toGraph">Back</button></div>
   <ol id="indexList"><!--INDEX--></ol>
-  <p class="legal"><a href="/impressum">Impressum</a> · <a href="/datenschutz">Datenschutz</a></p>
+  <p class="legal"><a href="/impressum">Impressum</a></p>
 </section>
 
 <script type="module" src="/src/main.js"></script>

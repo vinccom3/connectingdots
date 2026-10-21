@@ -11,13 +11,22 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--
 canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 #gl{z-index:0;touch-action:none;background:var(--bg)}
 #hud{z-index:4;pointer-events:none}
+/* Safari 26 colours the status-bar area after the fixed element touching the top: this one, in the page colour */
+#edge{position:fixed;top:0;left:0;right:0;height:max(env(safe-area-inset-top,0px),3px);background:var(--bg);z-index:2;pointer-events:none}
+body:has(#index:not([hidden])) #edge{background:var(--fg)}
+/* Safari 26 paints the status bar and the strip behind its toolbar in a flat colour. The scene fades into exactly
+   that colour at top and bottom, so bars and universe read as one dark field instead of a framed picture.
+   Gradient only, no background-color: Safari must not sample this layer. */
+#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background-image:linear-gradient(180deg,var(--bg) 0,color-mix(in srgb,var(--bg) 0%,transparent) min(14vh,120px),color-mix(in srgb,var(--bg) 0%,transparent) calc(100% - min(14vh,120px)),var(--bg) 100%)}
+@media (min-width:760px){#vignette{display:none}}
 @media (hover:hover) and (pointer:fine){body.dot,body.dot #gl,body.dot .ui,body.dot .ui *{cursor:none}}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 .ui{position:fixed;z-index:3;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
 .fade{opacity:0;visibility:hidden;transition:opacity 1.6s var(--ease),visibility 0s 1.6s}
 body.live .fade{opacity:1;visibility:visible;transition:opacity 1.6s var(--ease) .3s,visibility 0s}
-#tl{top:calc(16px + env(safe-area-inset-top,0px));left:16px;line-height:1.7}
+#tl{top:calc(16px + env(safe-area-inset-top,0px));left:16px;line-height:1.7;padding-top:5px} /* same baseline as the Index button opposite */
 #tr{top:calc(16px + env(safe-area-inset-top,0px));right:16px}
 .ui b{color:var(--fg);font-weight:400}
 .ui .mail{text-transform:none;letter-spacing:0;color:var(--dim);text-decoration:none}
@@ -52,10 +61,9 @@ body.live .fade{opacity:1;visibility:visible;transition:opacity 1.6s var(--ease)
 #panel .links a{color:var(--fg);text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:2px}
 #panel .links a:hover,#panel .links a:focus-visible{border-color:var(--accent-2);outline:none}
 /* legal links: always reachable, never loud */
-#legal{bottom:calc(16px + env(safe-area-inset-bottom,0px));right:16px;font-size:9px;opacity:.55;transition:opacity .4s var(--ease)}
-#legal:hover,#legal:focus-within{opacity:1}
-#legal a{color:var(--dim);text-decoration:none}
-#legal a:hover,#legal a:focus-visible{color:var(--fg);outline:none}
+#legal{bottom:calc(16px + env(safe-area-inset-bottom,0px));right:16px}
+#legal a{display:inline-block;color:var(--dim);text-decoration:none;border-bottom:1px solid transparent;padding:6px 0 2px;line-height:normal}
+#legal a:hover,#legal a:focus-visible{color:var(--fg);border-color:var(--line);outline:none}
 #index .legal{max-width:1100px;margin:28px auto 0;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--index-dim)}
 #index .legal a{color:inherit}
 /* player: bottom left. Idle: only the Play dot. Playing: the title unfolds; the stream link slides out on hover. */
