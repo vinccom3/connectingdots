@@ -51,6 +51,13 @@ body.live .fade{opacity:1;visibility:visible;transition:opacity 1.6s var(--ease)
 #panel .links{margin-top:28px;display:flex;flex-wrap:wrap;gap:14px;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
 #panel .links a{color:var(--fg);text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:2px}
 #panel .links a:hover,#panel .links a:focus-visible{border-color:var(--accent-2);outline:none}
+/* legal links: always reachable, never loud */
+#legal{bottom:calc(16px + env(safe-area-inset-bottom,0px));right:16px;font-size:9px;opacity:.55;transition:opacity .4s var(--ease)}
+#legal:hover,#legal:focus-within{opacity:1}
+#legal a{color:var(--dim);text-decoration:none}
+#legal a:hover,#legal a:focus-visible{color:var(--fg);outline:none}
+#index .legal{max-width:1100px;margin:28px auto 0;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--index-dim)}
+#index .legal a{color:inherit}
 /* player: bottom left. Idle: only the Play dot. Playing: the title unfolds; the stream link slides out on hover. */
 #player{bottom:calc(16px + env(safe-area-inset-bottom,0px));left:16px;display:flex;align-items:center;max-width:calc(100vw - 32px)}
 #player[hidden]{display:none}
@@ -87,7 +94,7 @@ body.sound #player:hover a,body.sound #player:focus-within a{max-width:260px;opa
   #index li{grid-template-columns:1fr;gap:6px}#index li small{text-align:left}
 }
 @media (max-width:759px){
-  body:has(#panel.open) #player{opacity:0;pointer-events:none}
+  body:has(#panel.open) #player,body:has(#panel.open) #legal{opacity:0;pointer-events:none}
   #trackBy{display:none}
   /* bottom sheet on phones: the focused dot stays visible above it */
   #panel{top:auto;height:56vh;height:56dvh;width:100%;padding:56px 20px calc(32px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 0%,transparent),color-mix(in srgb,var(--bg) 90%,transparent) 40px,color-mix(in srgb,var(--bg) 97%,transparent));transform:translateY(100%)}

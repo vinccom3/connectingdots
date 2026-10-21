@@ -9,9 +9,6 @@
 <meta name="theme-color" content="#07060c">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <title>Connecting Dots</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" id="fonts" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;500;800&family=Space+Mono:wght@400;700&display=swap">
 <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
@@ -27,6 +24,8 @@
   <a id="stream" target="_blank" rel="noopener" hidden></a>
 </div>
 
+<nav class="ui" id="legal" aria-label="Legal"><a href="/impressum">Impressum</a> · <a href="/datenschutz">Datenschutz</a></nav>
+
 <aside id="panel" aria-live="polite" aria-label="Details" inert>
   <button type="button" id="close" class="ui">Close</button>
   <div class="kind" id="pKind"></div>
@@ -41,6 +40,7 @@
 <section id="index" hidden aria-label="Index">
   <div class="ui bar"><span><b>Connecting Dots</b> · Index</span><button type="button" id="toGraph">Back</button></div>
   <ol id="indexList"><!--INDEX--></ol>
+  <p class="legal"><a href="/impressum">Impressum</a> · <a href="/datenschutz">Datenschutz</a></p>
 </section>
 
 <script type="module" src="/src/main.js"></script>

@@ -24,6 +24,6 @@ export default defineConfig({
   build: {
     target: 'es2022',
     chunkSizeWarningLimit: 800,
-    rollupOptions: { input: { main: resolve('index.html'), v1: resolve('legacy/v1.html') } },
+    rollupOptions: { input: { main: resolve('index.html'), impressum: resolve('impressum.html'), datenschutz: resolve('datenschutz.html'), v1: resolve('legacy/v1.html') } },
   },
 });

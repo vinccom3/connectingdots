@@ -1,0 +1,20 @@
+@import './fonts.css';
+/* Impressum and Datenschutz: the same dark world, set for reading. */
+:root{--bg:#07060c;--fg:#f2eee6;--dim:rgba(242,238,230,.55);--line:rgba(242,238,230,.14);--accent:#c9a9ff;--accent-2:#5de0c8;color-scheme:dark}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:'Space Mono',ui-monospace,Menlo,monospace;font-size:13px;line-height:1.7;-webkit-font-smoothing:antialiased}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:calc(16px + env(safe-area-inset-top,0px)) 16px 0;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+header b{color:var(--fg);font-weight:400}
+header a{color:var(--fg);text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:2px}
+header a:hover,header a:focus-visible{border-color:var(--accent);outline:none}
+main{max-width:640px;margin:0 auto;padding:72px 16px calc(64px + env(safe-area-inset-bottom,0px))}
+h1{font-family:'Unbounded',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(28px,6vw,44px);line-height:1.02;letter-spacing:-.01em;margin:0 0 40px}
+h2{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:400;margin:40px 0 10px}
+p,address{margin:0 0 14px;font-style:normal;color:color-mix(in srgb,var(--fg) 86%,transparent)}
+ul{margin:0 0 14px;padding-left:18px}
+li{margin:0 0 6px;color:color-mix(in srgb,var(--fg) 86%,transparent)}
+a{color:var(--fg)}
+a:hover,a:focus-visible{color:var(--accent-2)}
+.small{font-size:11px;color:var(--dim)}
+footer{max-width:640px;margin:0 auto;padding:0 16px calc(32px + env(safe-area-inset-bottom,0px));font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+footer a{color:var(--dim);text-decoration:none}footer a:hover{color:var(--fg)}

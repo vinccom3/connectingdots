@@ -6,6 +6,7 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { forceSimulation, forceLink, forceManyBody, forceRadial } from 'd3-force-3d';
 import T from './theme.js';
+import './fonts.css';
 
 /* ---------- constants. Look and pacing live in theme.js; what stays here is behaviour. ---------- */
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -45,7 +46,6 @@ const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${
   st.setProperty('--dim', rgba(T.fg, T.dim)); st.setProperty('--line', rgba(T.fg, T.line));
   st.setProperty('--accent', T.accent); st.setProperty('--accent-2', T.accent2); st.setProperty('--index-hover', T.indexHover); st.setProperty('--index-dim', rgba(T.bg, T.indexDim));
   st.setProperty('--display', `'${T.fonts.display}',system-ui,sans-serif`); st.setProperty('--mono', `'${T.fonts.mono}',ui-monospace,Menlo,monospace`);
-  const fl = $('fonts'); if (fl && fl.href !== T.fonts.href) fl.href = T.fonts.href;
   document.querySelector('meta[name=theme-color]')?.setAttribute('content', T.bg);
 }
 

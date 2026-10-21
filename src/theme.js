@@ -44,6 +44,5 @@ export default {
   fonts: {
     display: 'Unbounded',
     mono: 'Space Mono',
-    href: 'https://fonts.googleapis.com/css2?family=Unbounded:wght@300;500;800&family=Space+Mono:wght@400;700&display=swap',
   },
 };
