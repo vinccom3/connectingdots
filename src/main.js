@@ -704,6 +704,13 @@ function select(n, opts = {}) {
     return;
   }
   if (!live) goLive();
+  const fig = $('pPhoto'), img = fig.querySelector('img');
+  fig.hidden = !n.d.photo; fig.classList.remove('in');
+  if (n.d.photo) {
+    img.onload = () => fig.classList.add('in');
+    img.alt = n.d.label; img.src = n.d.photo;
+    if (img.complete && img.naturalWidth) fig.classList.add('in');
+  } else img.removeAttribute('src');
   $('pKind').textContent = n.d.kind || '';
   $('pTitle').textContent = n.d.label;
   const meta = $('pMeta'); meta.replaceChildren();
