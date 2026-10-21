@@ -47,7 +47,7 @@ body.live .fade{opacity:1;visibility:visible;transition:opacity 1.6s var(--ease)
 #pPhoto.in img{opacity:.92;transform:none;filter:none}
 #panel .kind{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
 #panel h2{font-family:var(--display);font-weight:800;font-size:clamp(24px,3.4vw,34px);line-height:1.02;margin:10px 0 20px;text-wrap:balance;text-transform:uppercase;letter-spacing:-.01em}
-#panel p{font-size:13px;line-height:1.65;margin:0 0 24px;max-width:38ch;color:color-mix(in srgb,var(--fg) 86%,transparent)}
+#panel p{font-size:13px;line-height:1.65;margin:0 0 24px;color:color-mix(in srgb,var(--fg) 86%,transparent)}
 #panel p:empty{display:none}
 #panel .meta{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:24px}
 #panel .meta:empty{display:none}
