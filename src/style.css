@@ -29,11 +29,13 @@ body.live .fade{opacity:1;visibility:visible;transition:opacity 1.6s var(--ease)
 
 #panel{position:fixed;z-index:5;right:0;top:0;bottom:0;width:min(420px,100vw);background:linear-gradient(90deg,color-mix(in srgb,var(--bg) 0%,transparent),color-mix(in srgb,var(--bg) 78%,transparent) 18%,color-mix(in srgb,var(--bg) 96%,transparent));padding:calc(76px + env(safe-area-inset-top,0px)) 28px calc(40px + env(safe-area-inset-bottom,0px)) 52px;box-sizing:border-box;overflow-y:auto;transform:translateX(100%);opacity:0;transition:transform .9s var(--ease),opacity .6s var(--ease);scrollbar-width:none}
 #panel.open{transform:none;opacity:1}
-/* artist photo: one look for all (4:5, same face scale, black and white with grain, baked into the files) */
-#pPhoto{margin:0 0 22px;aspect-ratio:4/5;max-width:340px;background:color-mix(in srgb,var(--fg) 5%,transparent);overflow:hidden}
+/* artist photo, between name and facts: toned into the palette in the file itself (shadows on the background violet,
+   highlights below the text white), and its edges dissolve into the panel like a light in the dark */
+#pPhoto{margin:4px 0 22px;aspect-ratio:4/5;max-width:300px;overflow:hidden;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent),linear-gradient(180deg,transparent,#000 10%,#000 72%,transparent);-webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent),linear-gradient(180deg,transparent,#000 10%,#000 72%,transparent);mask-composite:intersect}
 #pPhoto[hidden]{display:none}
-#pPhoto img{display:block;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.03);transition:opacity .9s var(--ease),transform 1.4s var(--ease)}
-#pPhoto.in img{opacity:1;transform:none}
+#pPhoto img{display:block;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.04);filter:blur(4px);transition:opacity 1.2s var(--ease),transform 1.6s var(--ease),filter 1.2s var(--ease)}
+#pPhoto.in img{opacity:.92;transform:none;filter:none}
 #panel .kind{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
 #panel h2{font-family:var(--display);font-weight:800;font-size:clamp(24px,3.4vw,34px);line-height:1.02;margin:10px 0 20px;text-wrap:balance;text-transform:uppercase;letter-spacing:-.01em}
 #panel p{font-size:13px;line-height:1.65;margin:0 0 24px;max-width:38ch;color:color-mix(in srgb,var(--fg) 86%,transparent)}
@@ -88,7 +90,7 @@ body.sound #player:hover a,body.sound #player:focus-within a{max-width:260px;opa
   /* bottom sheet on phones: the focused dot stays visible above it */
   #panel{top:auto;height:56vh;height:56dvh;width:100%;padding:56px 20px calc(32px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 0%,transparent),color-mix(in srgb,var(--bg) 90%,transparent) 40px,color-mix(in srgb,var(--bg) 97%,transparent));transform:translateY(100%)}
   #panel h2{font-size:26px;margin-bottom:14px}
-  #pPhoto{aspect-ratio:16/10;max-width:none;margin-bottom:18px}#pPhoto img{object-position:50% 34%}
+  #pPhoto{aspect-ratio:16/10;max-width:none;margin-bottom:14px}#pPhoto img{object-position:50% 34%}
   #close{top:20px}
 }
 @media (prefers-reduced-motion:reduce){#panel,.fade,body.live .fade{transition:none}body.sound #play i{animation:none}}

@@ -1,5 +1,5 @@
 # usage: SRC=<folder with originals>/ python3 scripts/artist-photos.py public/assets/artists
-# One look for every artist photo: same 4:5 crop at the same face scale, black and white, analogue grain.
+# One look for every artist photo: same 4:5 crop at the same face scale, toned monochrome, soft grain.
 import sys, numpy as np
 from PIL import Image, ImageFilter
 import os
@@ -14,11 +14,14 @@ SRC={
 }
 K=6.0; EYE=.40; W,H=800,1000
 rng=np.random.default_rng(7)
+# Toned into the site instead of hard black and white: shadows sit on the background violet-black,
+# highlights stop at the warm off-white of the text, contrast stays soft.
+SHADOW=np.array([18,15,28],np.float32)/255    # a touch above --bg #07060c, so faces never drown
+LIGHT=np.array([212,206,198],np.float32)/255  # under --fg #f2eee6, so the photo never outshines the type
 def curve(x):
     x=np.clip(x,0,1)
-    s=x*x*(3-2*x)               # S-curve
-    y=.55*s+.45*x
-    return .06+y*(.90-.06)   # lifted blacks, soft highlights: print paper, not screen
+    s=x*x*(3-2*x)
+    return .78*x+.22*s                         # barely an S: tone, not punch
 for name,(f,ex,ey,d) in SRC.items():
     im=Image.open(U+f).convert('RGB')
     ch=d*K; cw=ch*.8
@@ -28,7 +31,7 @@ for name,(f,ex,ey,d) in SRC.items():
     im=im.crop(box).resize((W,H), Image.LANCZOS)
     a=np.asarray(im).astype(np.float32)/255
     L=a[...,0]*.36+a[...,1]*.50+a[...,2]*.14                 # panchromatic film, skin a touch brighter
-    lo,hi=np.percentile(L,1.5),np.percentile(L,99.2)
+    lo,hi=np.percentile(L,.5),np.percentile(L,99.8)
     L=(L-lo)/max(hi-lo,1e-3)
     L=curve(L)
     # halation-ish softness: a little of a blurred copy on top
@@ -36,11 +39,13 @@ for name,(f,ex,ey,d) in SRC.items():
     L=L*.86+np.maximum(L,soft)*.14
     # vignette
     yy,xx=np.mgrid[0:H,0:W]; r=np.sqrt(((xx-W/2)/(W*.62))**2+((yy-H*.44)/(H*.62))**2)
-    L*=1-.22*np.clip(r-.55,0,1)**1.4
+    L*=1-.30*np.clip(r-.5,0,1)**1.3
     # grain: clumped, strongest in the mid-tones
     g=rng.normal(0,1,(H,W)).astype(np.float32)
     g=np.asarray(Image.fromarray(((g*40)+128).clip(0,255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(.7))).astype(np.float32)/255-.5
-    L+=g*.16*(.35+1.3*L*(1-L))
-    out=Image.fromarray((np.clip(L,0,1)*255).astype(np.uint8),'L')
-    out.save(f'{OUT}/{name}.jpg', quality=80, optimize=True, progressive=True)
+    L+=g*.10*(.35+1.3*L*(1-L))
+    L=np.clip(L,0,1)[...,None]
+    rgb=SHADOW+(LIGHT-SHADOW)*L
+    out=Image.fromarray((rgb*255).clip(0,255).astype(np.uint8),'RGB')
+    out.save(f'{OUT}/{name}.jpg', quality=82, optimize=True, progressive=True)
     print(name, box)
